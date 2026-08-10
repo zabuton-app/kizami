@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>刻（kizami）— a tray-resident pomodoro timer</title>
+    <meta
+      name="description"
+      content="刻（kizami） is a tray-resident pomodoro timer with a candy-pop look. Focus, break, repeat — it lives in your system tray and keeps ticking even with the window closed. For Linux, Windows, and macOS."
+    />
+    <link rel="icon" href="./assets/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* kizami's candy-pop palette, regardless of the OS color scheme */
+      :root {
+        color-scheme: light;
+        --bg: #fff6e9;
+        --fg: #2d2a26;
+        --muted: rgba(45, 42, 38, 0.55);
+        --card: #ffffff;
+        --border: #2d2a26;
+        --accent: #ff6b57;
+        --accent-fg: #ffffff;
+        --teal: #21b8a6;
+        --yellow: #ffc53d;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        font-family:
+          'Zen Maru Gothic',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.6;
+      }
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 3rem 1.25rem 4rem;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+      }
+      header img.logo {
+        width: 96px;
+        height: 96px;
+        border-radius: 22%;
+      }
+      h1 {
+        font-size: 2.2rem;
+        margin-top: 0.75rem;
+      }
+      .tagline {
+        color: var(--muted);
+        font-size: 1.1rem;
+        max-width: 40rem;
+        margin: 0.5rem auto 0;
+      }
+      /* candy-style desktop scene: chunky dark frame like the app's own cards */
+      .scene {
+        border-radius: 18px;
+        overflow: hidden;
+        border: 3px solid var(--border);
+        box-shadow: 0 8px 0 rgba(45, 42, 38, 0.85);
+        margin: 2rem 0 2.75rem;
+      }
+      .desktop {
+        padding: 5.5% 8%;
+        background: linear-gradient(135deg, #ffc53d 0%, #ff6b57 45%, #d75f9e 75%, #8a6fd1 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.2rem;
+      }
+      .desktop img {
+        display: block;
+        max-width: 100%;
+        border-radius: 12px;
+        box-shadow:
+          0 18px 44px rgba(20, 14, 8, 0.35),
+          0 4px 12px rgba(20, 14, 8, 0.25);
+      }
+      .desktop img.popup {
+        width: min(320px, 70%);
+      }
+      .desktop img.mini {
+        width: min(340px, 80%);
+        border-radius: 999px;
+      }
+      h2 {
+        font-size: 1.3rem;
+        margin: 2.5rem 0 1rem;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+      }
+      .card {
+        background: var(--card);
+        border: 2px solid var(--border);
+        border-radius: 14px;
+        padding: 1.25rem;
+        box-shadow: 0 4px 0 rgba(45, 42, 38, 0.85);
+      }
+      .card.highlight {
+        box-shadow: 0 4px 0 var(--accent);
+        border-color: var(--accent);
+      }
+      .card h3 {
+        font-size: 1.05rem;
+        margin-bottom: 0.75rem;
+      }
+      .btn {
+        display: block;
+        text-align: center;
+        text-decoration: none;
+        background: var(--accent);
+        color: var(--accent-fg);
+        border-radius: 999px;
+        padding: 0.55rem 0.9rem;
+        margin: 0.4rem 0;
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+      .btn.secondary {
+        background: transparent;
+        color: var(--fg);
+        border: 2px solid var(--border);
+        font-weight: 500;
+      }
+      .btn:hover {
+        filter: brightness(1.08);
+      }
+      .size {
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 400;
+        font-size: 0.85rem;
+      }
+      .btn.secondary .size {
+        color: var(--muted);
+      }
+      code.cmd {
+        display: block;
+        background: var(--bg);
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        padding: 0.55rem 0.9rem;
+        margin: 0.4rem 0;
+        font-size: 0.9rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        font-family: ui-monospace, monospace;
+      }
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+      }
+      .features .card h3 {
+        margin-bottom: 0.4rem;
+      }
+      .features .card p {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-top: 1rem;
+      }
+      nav.top {
+        margin-top: 1rem;
+        font-size: 0.95rem;
+      }
+      nav.top a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 700;
+      }
+      nav.top a:hover {
+        text-decoration: underline;
+      }
+      footer {
+        margin-top: 3.5rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      footer a {
+        color: inherit;
+      }
+      #version {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img class="logo" src="./assets/icon.png" alt="刻（kizami）logo" />
+        <h1>刻（kizami）</h1>
+        <p class="tagline">
+          A tray-resident pomodoro timer with a candy-pop look. Focus, break, repeat — it lives in
+          your tray and keeps ticking even with the window closed.
+        </p>
+        <p id="version"></p>
+        <nav class="top"><a href="./guide.html">📖 User Guide — how to use kizami</a></nav>
+      </header>
+
+      <div class="scene">
+        <div class="desktop">
+          <img
+            class="popup"
+            src="./assets/shot-timer.png"
+            alt="The kizami timer popup — a focus session in progress with colorful progress blocks filling in"
+          />
+          <img
+            class="mini"
+            src="./assets/shot-mini.png"
+            alt="kizami's mini mode — a slim horizontal bar with the running timer and a pause button"
+          />
+        </div>
+      </div>
+
+      <h2>Download</h2>
+      <div class="cards" id="downloads">
+        <div class="card" data-os="linux">
+          <h3>🐧 Linux</h3>
+          <a
+            class="btn"
+            data-asset="tar"
+            href="https://github.com/zabuton-app/kizami/releases/latest"
+            >.tar.xz archive</a
+          >
+          <a
+            class="btn secondary"
+            data-asset="deb"
+            href="https://github.com/zabuton-app/kizami/releases/latest"
+            >.deb package</a
+          >
+        </div>
+        <div class="card" data-os="windows">
+          <h3>🪟 Windows</h3>
+          <a
+            class="btn"
+            data-asset="exe"
+            href="https://github.com/zabuton-app/kizami/releases/latest"
+            >Installer (x64)</a
+          >
+        </div>
+        <div class="card" data-os="mac">
+          <h3>🍎 macOS</h3>
+          <a
+            class="btn"
+            data-asset="dmg"
+            href="https://github.com/zabuton-app/kizami/releases/latest"
+            >.dmg (Apple silicon)</a
+          >
+        </div>
+      </div>
+
+      <p class="note">
+        macOS: kizami is not notarized by Apple, so the first launch is blocked. Allow it once via
+        <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>. See the
+        <a href="./guide.html#macos-first-launch">guide</a> for details.
+      </p>
+
+      <h2>Package managers</h2>
+      <div class="cards">
+        <div class="card" data-os="linux">
+          <h3>Arch Linux (AUR)</h3>
+          <code class="cmd">yay -S kizami-bin</code>
+        </div>
+      </div>
+
+      <h2>Features</h2>
+      <div class="features">
+        <div class="card">
+          <h3>🍅 Classic pomodoro cycle</h3>
+          <p>
+            Focus (25 min) → short break (5 min), four times, then a long break (15 min). Every
+            duration is configurable.
+          </p>
+        </div>
+        <div class="card">
+          <h3>📌 Lives in your tray</h3>
+          <p>
+            Close the popup any time — the timer keeps running in the background, and desktop
+            notifications tell you when a phase ends.
+          </p>
+        </div>
+        <div class="card">
+          <h3>➖ Mini mode</h3>
+          <p>
+            Shrink the popup to a slim horizontal bar that stays out of the way: just the countdown
+            and a start/stop button.
+          </p>
+        </div>
+        <div class="card">
+          <h3>⏰ No drift</h3>
+          <p>
+            The engine is wall-clock based, so hiding the window or putting the machine to sleep
+            never skews the timer.
+          </p>
+        </div>
+        <div class="card">
+          <h3>🌏 Japanese / English</h3>
+          <p>The UI follows your OS language automatically and can be switched in settings.</p>
+        </div>
+        <div class="card">
+          <h3>🎨 Candy-pop look</h3>
+          <p>A warm, rounded design that is identical on Linux, macOS, and Windows.</p>
+        </div>
+      </div>
+
+      <p class="note">
+        All downloads are also available on the
+        <a href="https://github.com/zabuton-app/kizami/releases">GitHub Releases</a> page.
+        刻（kizami） works fully offline — no account, no telemetry.
+      </p>
+
+      <footer>
+        <p>
+          Free &amp; open source (MIT) · <a href="./guide.html">User Guide</a> ·
+          <a href="https://github.com/zabuton-app/kizami">Source code on GitHub</a> ·
+          <a href="https://github.com/zabuton-app/kizami/issues">Report an issue</a> ·
+          <a href="./privacy.html">Privacy Policy</a>
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      // Resolve direct asset links + version from the latest GitHub release.
+      // Falls back to the releases page links already in the markup.
+      const human = (n) => `${(n / 1048576).toFixed(0)} MB`
+      fetch('https://api.github.com/repos/zabuton-app/kizami/releases/latest')
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((rel) => {
+          document.getElementById('version').textContent = `Latest release: ${rel.tag_name}`
+          const match = {
+            tar: (a) => a.name.endsWith('.tar.xz'),
+            deb: (a) => a.name.endsWith('.deb'),
+            exe: (a) => a.name.endsWith('.exe'),
+            dmg: (a) => a.name.endsWith('.dmg')
+          }
+          for (const btn of document.querySelectorAll('[data-asset]')) {
+            const asset = rel.assets.find(match[btn.dataset.asset])
+            if (asset) {
+              btn.href = asset.browser_download_url
+              btn.insertAdjacentHTML(
+                'beforeend',
+                ` <span class="size">(${human(asset.size)})</span>`
+              )
+            }
+          }
+        })
+        .catch(() => {})
+
+      // Highlight the visitor's platform.
+      const ua = navigator.userAgent
+      const os = /Windows/i.test(ua) ? 'windows' : /Mac/i.test(ua) ? 'mac' : 'linux'
+      for (const card of document.querySelectorAll(`[data-os="${os}"]`)) {
+        card.classList.add('highlight')
+      }
+    </script>
+  </body>
+</html>

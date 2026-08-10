@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+release/
+*.log
+.env
+.env.*
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.idea/

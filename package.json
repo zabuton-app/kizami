@@ -1,0 +1,47 @@
+{
+  "name": "kizami",
+  "version": "0.1.0",
+  "description": "刻 (kizami) - a tray-resident pomodoro timer",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "desktopName": "kizami.desktop",
+  "author": {
+    "name": "amgsk",
+    "email": "y.amgsk@gmail.com"
+  },
+  "homepage": "https://github.com/zabuton-app/kizami",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && prettier --check --ignore-unknown .prettierrc \"*.{json,ts,js,yml,md}\" \"{src,tests,docs,tools,.github}/**\"",
+    "format": "prettier --write --ignore-unknown .prettierrc \"*.{json,ts,js,yml,md}\" \"{src,tests,docs,tools,.github}/**\"",
+    "dist": "electron-vite build && electron-builder"
+  },
+  "dependencies": {
+    "electron-store": "^11.0.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "playwright-core": "^1.62.1",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10"
+  }
+}

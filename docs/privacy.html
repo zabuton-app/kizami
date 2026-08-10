@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — 刻（kizami）</title>
+    <meta
+      name="description"
+      content="Privacy policy for 刻（kizami）, a tray-resident pomodoro timer. kizami does not collect any personal data — your settings stay on your machine."
+    />
+    <link rel="icon" href="./assets/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* kizami's candy-pop palette, regardless of the OS color scheme */
+      :root {
+        color-scheme: light;
+        --bg: #fff6e9;
+        --fg: #2d2a26;
+        --muted: rgba(45, 42, 38, 0.55);
+        --card: #ffffff;
+        --border: #2d2a26;
+        --accent: #ff6b57;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        font-family:
+          'Zen Maru Gothic',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.7;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 3rem 1.25rem 4rem;
+      }
+      header {
+        margin-bottom: 2.5rem;
+      }
+      header img.logo {
+        width: 64px;
+        height: 64px;
+        border-radius: 22%;
+      }
+      h1 {
+        font-size: 2rem;
+        margin-top: 0.75rem;
+      }
+      .meta {
+        color: var(--muted);
+        margin-top: 0.25rem;
+      }
+      h2 {
+        font-size: 1.3rem;
+        margin: 2.25rem 0 0.75rem;
+      }
+      p {
+        margin: 0.75rem 0;
+      }
+      ul {
+        margin: 0.75rem 0;
+        padding-left: 1.4rem;
+      }
+      li {
+        margin: 0.35rem 0;
+      }
+      a {
+        color: var(--accent);
+      }
+      code {
+        background: var(--card);
+        border: 1px solid rgba(45, 42, 38, 0.25);
+        border-radius: 5px;
+        padding: 0.05em 0.35em;
+        font-size: 0.9em;
+        font-family: ui-monospace, monospace;
+      }
+      .summary {
+        background: var(--card);
+        border: 2px solid var(--border);
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+        margin: 1.5rem 0;
+        box-shadow: 0 4px 0 rgba(45, 42, 38, 0.85);
+      }
+      footer {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid rgba(45, 42, 38, 0.15);
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <a href="./index.html"
+          ><img class="logo" src="./assets/icon.png" alt="刻（kizami）logo"
+        /></a>
+        <h1>Privacy Policy</h1>
+        <p class="meta">Effective date: August 10, 2026</p>
+      </header>
+
+      <div class="summary">
+        <p>
+          <strong>In short: kizami does not collect any personal data.</strong> It is a local
+          application — your settings stay on your machine. The only network request it ever makes
+          is an optional update check, described below.
+        </p>
+      </div>
+
+      <h2>Data stored locally</h2>
+      <p>kizami stores two kinds of data, only on your device:</p>
+      <ul>
+        <li>
+          Application settings (timer durations, auto-start, task name, language, theme, window
+          mode, and tray icon) are saved in a local configuration file.
+        </li>
+        <li>
+          Update-check state (whether the automatic check is on, a version you chose to skip, and
+          when the last check ran) is saved in a second local file.
+        </li>
+      </ul>
+      <p>
+        None of this data ever leaves your machine, and the developer has no access to it. kizami
+        does not read, index, or modify any of your files.
+      </p>
+
+      <h2>Network access</h2>
+      <p>
+        kizami makes exactly one kind of network request: an optional update check. It queries the
+        GitHub API (<code>api.github.com</code>) for the latest release of kizami to let you know
+        when a new version is available.
+      </p>
+      <ul>
+        <li>
+          The request contains no personal data or identifiers beyond what any HTTP request
+          technically exposes (such as your IP address), which is processed by GitHub under the
+          <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement"
+            >GitHub Privacy Statement</a
+          >.
+        </li>
+        <li>
+          The automatic check on startup can be turned off in the app's settings; updates can then
+          only be checked manually.
+        </li>
+        <li>
+          kizami never downloads or installs updates by itself — it only tells you that a newer
+          version exists.
+        </li>
+      </ul>
+
+      <h2>Analytics and telemetry</h2>
+      <p>
+        kizami contains no analytics, telemetry, crash reporting, advertising, or tracking of any
+        kind. There are no user accounts and no cloud services.
+      </p>
+
+      <h2>Third parties</h2>
+      <p>
+        kizami never shares your settings with third parties — they never leave your machine. The
+        only third party involved is GitHub, which receives standard request metadata (such as your
+        IP address) when the optional update check runs, as described under “Network access” above.
+      </p>
+
+      <h2>This website</h2>
+      <p>
+        This policy is about the kizami application. The website you are reading it on is hosted by
+        GitHub Pages and loads its web font from Google Fonts; both services receive standard
+        request metadata (such as your IP address) when the page is viewed, under the
+        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement"
+          >GitHub Privacy Statement</a
+        >
+        and the
+        <a href="https://policies.google.com/privacy">Google Privacy Policy</a> respectively. The
+        website itself sets no cookies and contains no analytics.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If kizami's behavior ever changes in a way that affects this policy, this page will be
+        updated and the effective date above will be revised.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about this policy can be raised on the
+        <a href="https://github.com/zabuton-app/kizami/issues">GitHub issue tracker</a>.
+      </p>
+
+      <footer>
+        <p>
+          <a href="./index.html">刻（kizami）</a> — free &amp; open source (MIT) ·
+          <a href="https://github.com/zabuton-app/kizami">Source code on GitHub</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

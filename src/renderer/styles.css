@@ -1,0 +1,767 @@
+/* Zen Maru Gothic is bundled (OFL licensed, see fonts/OFL.txt) so the app
+   renders identically offline on every OS. */
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  font-weight: 500;
+  font-style: normal;
+  src: url('./fonts/ZenMaruGothic-Medium.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  font-weight: 700;
+  font-style: normal;
+  src: url('./fonts/ZenMaruGothic-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  font-weight: 900;
+  font-style: normal;
+  src: url('./fonts/ZenMaruGothic-Black.ttf') format('truetype');
+}
+
+/* Theme tokens. The values here are the default (candy) theme; App.tsx
+   overrides them per-theme on `:root` (see contracts/settings-ipc.md).
+   `--font` is theme-independent and never overridden. */
+:root {
+  --bg: #fff6e9;
+  --ink: #2d2a26;
+  --card: #ffffff;
+  --badge: #21b8a6;
+  --primary: #ff6b57;
+  --primary-text: #ffffff;
+  --palette-1: #ff6b57;
+  --palette-2: #ffc53d;
+  --palette-3: #21b8a6;
+  --empty: rgba(45, 42, 38, 0.12);
+  --sub: rgba(45, 42, 38, 0.55);
+  --font: 'Zen Maru Gothic', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: transparent;
+  font-family: var(--font);
+  color: var(--ink);
+  user-select: none;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+  border-radius: 18px;
+  overflow: hidden;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s;
+}
+
+/* Match the mini bar's outline so both modes read as the same window. The
+   mini bar draws its own border, so only the normal view needs one here.
+
+   Leaving mini mode renders the normal view before the compositor has grown
+   the window back (the resize is asynchronous on Wayland), so for a moment
+   the full layout has only the mini bar's 380x58 to work with and spills out
+   of the window. Pin the floors to the smallest supported normal window
+   (WINDOW_SIZE.width * WINDOW_MIN_SCALE and WINDOW_MIN_CONTENT_HEIGHT) so the
+   layout never reflows to something smaller than it is designed for. */
+.app:not(.app--mini) {
+  border: 3px solid var(--ink);
+  min-width: 280px;
+  min-height: 432px;
+}
+
+/* --- Title bar (custom window decoration) --- */
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  -webkit-app-region: drag;
+}
+
+.titlebar__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+}
+
+.titlebar__dot--close {
+  background: #ff5f57;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar__dot--yellow {
+  background: #febc2e;
+}
+
+.titlebar__dot--green {
+  background: #28c840;
+}
+
+.titlebar__spacer {
+  flex: 1;
+}
+
+.titlebar__gear,
+.titlebar__mini {
+  -webkit-app-region: no-drag;
+  border: none;
+  background: transparent;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--sub);
+  display: flex;
+  align-items: center;
+}
+
+.titlebar__gear:hover,
+.titlebar__mini:hover {
+  color: var(--ink);
+}
+
+/* --- Timer view --- */
+
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 2px 28px 24px;
+  flex: 1;
+}
+
+.timer__header {
+  align-self: stretch;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timer__phase {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.timer__session {
+  font-weight: 900;
+  font-size: 12px;
+  color: #fff;
+  background: var(--badge);
+  border-radius: 99px;
+  padding: 5px 12px;
+}
+
+.timer__card {
+  align-self: stretch;
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 24px;
+  box-shadow: 6px 6px 0 var(--ink);
+  transition:
+    background-color 0.3s,
+    border-color 0.3s;
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.timer__time {
+  font-weight: 900;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.timer__blocks {
+  display: flex;
+  gap: 5px;
+}
+
+.timer__block {
+  width: 22px;
+  height: 14px;
+  border-radius: 5px;
+}
+
+.timer__buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.timer__task {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--sub);
+}
+
+/* --- Mini bar view --- */
+
+/* The bar fills the window in mini mode, so the window background would only
+   show through at the rounded corners; keep it transparent instead. */
+.app--mini {
+  background: transparent;
+}
+
+.mini-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  /* The toggle (34px) plus the border is the bar's hard floor; below this the
+     controls would be clipped by the window. */
+  min-height: 40px;
+  padding: 0 12px;
+  background: var(--card);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s;
+  -webkit-app-region: drag;
+}
+
+.mini-bar__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.mini-bar__time {
+  font-weight: 900;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -1px;
+  flex: none;
+  /* Keep every digit the same width so the blocks beside the clock do not
+     shift as the time counts down. */
+  font-variant-numeric: tabular-nums;
+  /* Zen Maru Gothic draws digits low in the line box, so nudge the clock up
+     until the colon lines up with the phase dot beside it. */
+  transform: translateY(-2px);
+}
+
+/* Takes the width left over by the fixed-size controls, and is the only part
+   of the bar allowed to shrink — so the buttons never get pushed outside. */
+.mini-bar__blocks {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The blocks divide the leftover width between them, capped at the design's
+   12px. Ten of them plus the gaps only just fit the bar, so a fixed width
+   would clip the last one as soon as the clock renders a pixel wider. */
+.mini-bar__block {
+  flex: 1 1 0;
+  max-width: 12px;
+  height: 8px;
+  border-radius: 3px;
+}
+
+.mini-bar__toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--primary);
+  color: var(--primary-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: none;
+  box-shadow: 0 3px 0 var(--ink);
+  transition:
+    transform 0.05s,
+    box-shadow 0.05s;
+  -webkit-app-region: no-drag;
+}
+
+.mini-bar__toggle:hover {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.mini-bar__toggle:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.mini-bar__pause {
+  display: flex;
+  gap: 3px;
+}
+
+.mini-bar__pause-bar {
+  width: 3px;
+  height: 10px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.mini-bar__icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 2px solid var(--empty);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+  -webkit-app-region: no-drag;
+}
+
+.mini-bar__icon-btn:hover {
+  border-color: var(--ink);
+}
+
+/* The bar's own background sits close to the default focus ring on some
+   themes, so draw the ring in the theme's ink instead. */
+.mini-bar__toggle:focus-visible,
+.mini-bar__icon-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* --- Theme picker --- */
+
+.theme-picker {
+  margin-top: auto;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.theme-picker__dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+}
+
+.theme-picker__dot:hover {
+  transform: scale(1.15);
+}
+
+.theme-picker__dot--active {
+  border-color: var(--ink);
+}
+
+/* --- Candy buttons --- */
+
+.btn {
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 15px;
+  border: 3px solid var(--ink);
+  border-radius: 99px;
+  cursor: pointer;
+  box-shadow: 0 5px 0 var(--ink);
+  transition:
+    transform 0.05s,
+    box-shadow 0.05s;
+}
+
+.btn:hover {
+  transform: translateY(2px);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.btn:active {
+  transform: translateY(5px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.btn--primary {
+  padding: 13px 30px;
+  background: var(--primary);
+  color: var(--primary-text);
+}
+
+.btn--secondary {
+  padding: 13px 24px;
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* --- Settings view --- */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 2px 28px 28px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.settings__title {
+  font-weight: 900;
+  font-size: 16px;
+  margin: 0;
+}
+
+.settings__card {
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 5px 5px 0 var(--ink);
+  transition:
+    background-color 0.3s,
+    border-color 0.3s;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings__label {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepper__btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.stepper__btn:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.stepper__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.stepper__value {
+  font-weight: 900;
+  font-size: 14px;
+  min-width: 52px;
+  text-align: center;
+}
+
+.switch {
+  width: 46px;
+  height: 26px;
+  border-radius: 99px;
+  border: 2px solid var(--ink);
+  background: var(--empty);
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  transition: background 0.15s;
+}
+
+.switch--on {
+  background: var(--badge);
+}
+
+.switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  box-sizing: border-box;
+  transition: left 0.15s;
+}
+
+.switch--on .switch__knob {
+  left: 22px;
+}
+
+.text-input {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 8px 10px;
+  width: 100%;
+  outline: none;
+}
+
+.text-input:focus {
+  background: var(--card);
+}
+
+.segmented {
+  display: flex;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.segmented__option {
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 12px;
+  border: none;
+  background: var(--card);
+  color: var(--ink);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.segmented__option--active {
+  background: var(--primary);
+  color: var(--primary-text);
+}
+
+.update__btn {
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+}
+
+.update__btn:hover:not(:disabled) {
+  background: var(--empty);
+}
+
+.update__btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.update__btn--primary {
+  background: var(--primary);
+  color: var(--primary-text);
+}
+
+.update__btn--primary:hover:not(:disabled) {
+  background: var(--primary);
+  opacity: 0.85;
+}
+
+.update__version {
+  font-weight: 700;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.update__note {
+  margin: 0;
+  font-weight: 700;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.update__banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--empty);
+  padding: 12px 14px;
+}
+
+.update__banner-text {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.update__banner-version {
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.update__banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.about__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.about__name {
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.about__meta {
+  margin: 0;
+  font-weight: 700;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.about__link {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink);
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: left;
+}
+
+.about__link:hover {
+  opacity: 0.7;
+}
+
+.about__oss {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 2px solid var(--ink);
+  padding-top: 12px;
+}
+
+.about__oss-title {
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.about__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.about__entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--bg);
+  padding: 8px 10px;
+}
+
+.about__entry-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.about__badge {
+  flex-shrink: 0;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-weight: 900;
+  font-size: 10px;
+  background: var(--badge);
+}
+
+.about__entry-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Update badge on the gear button; hidden in mini mode because mini mode
+   draws no title bar at all. */
+.titlebar__gear {
+  position: relative;
+}
+
+.titlebar__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--badge);
+  border: 2px solid var(--ink);
+  box-sizing: border-box;
+}

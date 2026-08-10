@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            args: --linux
+          - os: windows-latest
+            platform: win
+            args: --win --x64
+          # Intel mac (--mac --x64) is deliberately not built: the macos-13 x64
+          # runners are being retired. Cross-build from an arm64 runner if it is
+          # ever needed again.
+          - os: macos-14
+            platform: mac-arm64
+            args: --mac --arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (main / preload / renderer)
+        run: npm run build
+
+      - name: Package
+        run: npx electron-builder ${{ matrix.args }} --publish never
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No Apple certificate, so regular macOS signing / notarization is
+          # skipped. The dmg stays openable anyway because electron-builder.yml
+          # sets electronFuses.resetAdHocDarwinSignature — see the comment there.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: kizami-${{ matrix.platform }}
+          path: |
+            release/*.AppImage
+            release/*.tar.xz
+            release/*.deb
+            release/*.exe
+            release/*.appx
+            release/*.dmg
+          if-no-files-found: ignore
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+
+      # Draft, so the release notes and the AUR / Microsoft Store rollout can be
+      # reviewed before the AppImage becomes the source of kizami-bin.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          draft: true
+          generate_release_notes: true

@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>刻（kizami）User Guide</title>
+    <meta
+      name="description"
+      content="How to use 刻（kizami）: run pomodoro sessions from your system tray, tweak durations, use mini mode, and keep focusing with desktop notifications."
+    />
+    <link rel="icon" href="./assets/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* kizami's candy-pop palette, regardless of the OS color scheme */
+      :root {
+        color-scheme: light;
+        --bg: #fff6e9;
+        --fg: #2d2a26;
+        --muted: rgba(45, 42, 38, 0.55);
+        --card: #ffffff;
+        --border: #2d2a26;
+        --accent: #ff6b57;
+        --teal: #21b8a6;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        font-family:
+          'Zen Maru Gothic',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.65;
+      }
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 3rem 1.25rem 4rem;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+      }
+      header img.logo {
+        width: 72px;
+        height: 72px;
+        border-radius: 22%;
+      }
+      h1 {
+        font-size: 2rem;
+        margin-top: 0.75rem;
+      }
+      .tagline {
+        color: var(--muted);
+        font-size: 1.05rem;
+        max-width: 40rem;
+        margin: 0.5rem auto 0;
+      }
+      nav.top {
+        margin-top: 1rem;
+        font-size: 0.95rem;
+      }
+      nav.top a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 700;
+      }
+      nav.top a:hover {
+        text-decoration: underline;
+      }
+      h2 {
+        font-size: 1.35rem;
+        margin: 2.75rem 0 0.9rem;
+        padding-top: 0.5rem;
+        border-top: 2px solid rgba(45, 42, 38, 0.15);
+      }
+      h3 {
+        font-size: 1.05rem;
+        margin: 1.5rem 0 0.5rem;
+      }
+      p {
+        margin: 0.6rem 0;
+      }
+      ul,
+      ol {
+        margin: 0.6rem 0 0.6rem 1.4rem;
+      }
+      li {
+        margin: 0.3rem 0;
+      }
+      a {
+        color: var(--accent);
+      }
+      kbd {
+        display: inline-block;
+        padding: 0 0.4em;
+        border-radius: 5px;
+        border: 1px solid rgba(45, 42, 38, 0.4);
+        border-bottom-width: 2px;
+        background: var(--card);
+        font-family: inherit;
+        font-size: 0.88em;
+      }
+      code {
+        background: var(--card);
+        border: 1px solid rgba(45, 42, 38, 0.25);
+        border-radius: 5px;
+        padding: 0.05em 0.35em;
+        font-size: 0.9em;
+        font-family: ui-monospace, monospace;
+      }
+      .card {
+        background: var(--card);
+        border: 2px solid var(--border);
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+        margin: 1rem 0;
+        box-shadow: 0 4px 0 rgba(45, 42, 38, 0.85);
+      }
+      .card.tip {
+        border-color: var(--teal);
+        box-shadow: 0 4px 0 var(--teal);
+      }
+      .shot {
+        border: 2px solid var(--border);
+        border-radius: 14px;
+        max-width: 100%;
+        display: block;
+        margin: 1rem auto;
+        box-shadow: 0 6px 0 rgba(45, 42, 38, 0.85);
+      }
+      .shot.small {
+        max-width: 340px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 1rem 0;
+        font-size: 0.95rem;
+      }
+      th,
+      td {
+        border: 1px solid rgba(45, 42, 38, 0.3);
+        padding: 0.5rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--card);
+      }
+      .toc {
+        columns: 2;
+        column-gap: 2rem;
+      }
+      @media (max-width: 560px) {
+        .toc {
+          columns: 1;
+        }
+      }
+      .toc a {
+        text-decoration: none;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+      footer {
+        margin-top: 3.5rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      footer a {
+        color: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <a href="./index.html"
+          ><img class="logo" src="./assets/icon.png" alt="刻（kizami）logo"
+        /></a>
+        <h1>刻（kizami）User Guide</h1>
+        <p class="tagline">
+          Everything you need to focus, break, and repeat with a little timer in your tray.
+        </p>
+        <nav class="top">
+          <a href="./index.html">← Download page</a> ·
+          <a href="https://github.com/zabuton-app/kizami">GitHub</a> ·
+          <a href="https://github.com/zabuton-app/kizami/issues">Report an issue</a>
+        </nav>
+      </header>
+
+      <h2 id="contents" style="border-top: none; margin-top: 0">Contents</h2>
+      <ul class="toc">
+        <li><a href="#getting-started">Getting started</a></li>
+        <li><a href="#cycle">The pomodoro cycle</a></li>
+        <li><a href="#controls">Running a session</a></li>
+        <li><a href="#mini">Mini mode</a></li>
+        <li><a href="#tray">The tray icon and quitting</a></li>
+        <li><a href="#notifications">Notifications</a></li>
+        <li><a href="#settings">Settings</a></li>
+        <li><a href="#updates">Updates</a></li>
+        <li><a href="#data">Where your data lives</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+
+      <h2 id="getting-started">Getting started</h2>
+      <p>
+        Install kizami from the <a href="./index.html">download page</a>, then launch it. The app
+        appears as an icon in your system tray / menu bar, and a small popup opens with the timer
+        ready to go.
+      </p>
+      <div class="card tip" id="macos-first-launch">
+        <strong>macOS: allow the first launch.</strong> kizami is not notarized by Apple (that
+        requires a paid developer account), so macOS blocks the first launch with an "Apple could
+        not verify…" dialog. Dismiss it, open
+        <strong>System Settings → Privacy &amp; Security</strong>, scroll down, and click
+        <strong>Open Anyway</strong> next to the kizami entry. This is only needed once.
+      </div>
+      <ol>
+        <li>Click <strong>Start</strong> to begin a 25-minute focus session.</li>
+        <li>
+          Close the popup if you like — the timer keeps running in the background, and the tray icon
+          shows that a session is active.
+        </li>
+        <li>
+          When the time is up, a desktop notification tells you to take a break. Click the tray icon
+          any time to bring the popup back.
+        </li>
+      </ol>
+
+      <h2 id="cycle">The pomodoro cycle</h2>
+      <img
+        class="shot small"
+        src="./assets/shot-timer.png"
+        alt="The kizami timer popup mid-session — 11:18 remaining of a focus session, session counter 1 of 4, colorful progress blocks, and Pause and Skip buttons"
+      />
+      <p>kizami follows the classic pomodoro rhythm:</p>
+      <ul>
+        <li><strong>Focus</strong> — 25 minutes of concentrated work.</li>
+        <li><strong>Short break</strong> — 5 minutes to breathe.</li>
+        <li>After four focus sessions, a <strong>long break</strong> — 15 minutes.</li>
+      </ul>
+      <p>
+        The <strong>1 / 4</strong> badge in the top corner shows where you are in the current set,
+        and the row of blocks under the countdown fills in as the session progresses. All three
+        durations can be changed in <a href="#settings">Settings</a>.
+      </p>
+      <div class="card tip">
+        <strong>Auto-start.</strong> With auto-start enabled (the default), the next phase begins on
+        its own — focus flows into break and back without touching the app. Turn it off in Settings
+        if you prefer to start each phase yourself.
+      </div>
+
+      <h2 id="controls">Running a session</h2>
+      <ul>
+        <li>
+          <strong>Start / Pause / Resume</strong> — the big button starts the current phase and
+          toggles between pause and resume while it runs.
+        </li>
+        <li>
+          <strong>Skip</strong> — jumps to the next phase immediately: end a break early, or bail
+          out of a focus session that got interrupted.
+        </li>
+        <li>
+          <strong>Task name</strong> — the label under the buttons shows what you're working on; set
+          it in Settings to keep your goal in view.
+        </li>
+      </ul>
+      <p>
+        The timer is <strong>wall-clock based</strong>: it counts real elapsed time, so hiding the
+        window, switching virtual desktops, or even putting the machine to sleep never makes it
+        drift. If the machine sleeps through the end of a phase, kizami catches up correctly on
+        wake.
+      </p>
+
+      <h2 id="mini">Mini mode</h2>
+      <img
+        class="shot small"
+        src="./assets/shot-mini.png"
+        alt="kizami's mini mode — a slim pill-shaped bar with the running countdown, progress blocks, and pause, skip, and expand buttons"
+      />
+      <p>
+        Click the <strong>shrink button</strong> in the popup's title bar to switch to
+        <strong>mini mode</strong> — a slim, pill-shaped bar with just the countdown, the progress
+        blocks, and start/stop. It takes almost no screen space, so you can keep it in a corner
+        while you work.
+      </p>
+      <ul>
+        <li>
+          The <strong>skip</strong> button moves to the next phase, same as in the full popup.
+        </li>
+        <li>The <strong>expand</strong> button returns to the full popup.</li>
+        <li>kizami remembers which mode you were in and reopens the same way next time.</li>
+      </ul>
+
+      <h2 id="tray">The tray icon and quitting</h2>
+      <p>
+        kizami is a tray app: <strong>closing the popup does not quit it</strong>. The timer keeps
+        running in the background, and the tray icon changes to show whether a session is active.
+      </p>
+      <ul>
+        <li><strong>Click the tray icon</strong> to open (or re-open) the popup next to it.</li>
+        <li>
+          <strong>Right-click the tray icon</strong> for the menu, including <strong>Quit</strong> —
+          that is how you exit kizami completely.
+        </li>
+      </ul>
+
+      <h2 id="notifications">Notifications</h2>
+      <p>
+        Every phase change fires a desktop notification — time for a break, and time to get back to
+        focus — so the popup can stay closed while you work. Notifications use your OS's native
+        notification system; if you don't see them, check that notifications are allowed for kizami
+        in your system settings.
+      </p>
+
+      <h2 id="settings">Settings</h2>
+      <img
+        class="shot small"
+        src="./assets/shot-settings.png"
+        alt="The kizami settings view with duration steppers, auto-start toggle, task name field, language and tray icon switches, and update check"
+      />
+      <p>Open Settings with the <strong>gear button</strong> in the popup's title bar.</p>
+      <table>
+        <tr>
+          <th>Setting</th>
+          <th>What it does</th>
+        </tr>
+        <tr>
+          <td>Focus length / Short break / Long break</td>
+          <td>The duration of each phase, in minutes.</td>
+        </tr>
+        <tr>
+          <td>Auto-start</td>
+          <td>Whether the next phase begins automatically when one ends.</td>
+        </tr>
+        <tr>
+          <td>Task name</td>
+          <td>A short label for what you're working on, shown under the timer.</td>
+        </tr>
+        <tr>
+          <td>Language</td>
+          <td>
+            日本語 or English. kizami follows your OS language on first launch and can be switched
+            here any time.
+          </td>
+        </tr>
+        <tr>
+          <td>Icon</td>
+          <td>Switches the tray icon between the 刻 logo and the original tomato.</td>
+        </tr>
+        <tr>
+          <td>Update</td>
+          <td>
+            Shows the current version and checks GitHub for a newer release — see
+            <a href="#updates">Updates</a>.
+          </td>
+        </tr>
+        <tr>
+          <td>About</td>
+          <td>Shows the app and runtime versions, license, source, and bundled OSS notices.</td>
+        </tr>
+      </table>
+
+      <h2 id="updates">Updates</h2>
+      <p>
+        kizami can check
+        <a href="https://github.com/zabuton-app/kizami/releases">GitHub Releases</a> for a newer
+        version and lets you know when one is available — it never downloads or installs anything by
+        itself. The automatic check on startup can be turned off in Settings, where you can still
+        check manually with <strong>Check now</strong>. If you installed from the AUR, update
+        through your AUR helper instead.
+      </p>
+
+      <h2 id="data">Where your data lives</h2>
+      <p>
+        Everything kizami stores lives in two small JSON files in the app-data folder (location
+        shown for Linux; on Windows it's under <code>%APPDATA%</code>, on macOS under
+        <code>~/Library/Application Support</code>):
+      </p>
+      <ul>
+        <li>
+          <code>~/.config/kizami/settings.json</code> — durations, auto-start, task name, language,
+          theme, and window mode.
+        </li>
+        <li>
+          <code>~/.config/kizami/update.json</code> — update-check state: whether the automatic
+          check is on, the version you chose to skip, and when the last check ran.
+        </li>
+      </ul>
+      <p>
+        <strong>Privacy:</strong> there is no telemetry, no analytics, and no account. The only
+        network request kizami ever makes is the optional update check described above — see the
+        <a href="./privacy.html">privacy policy</a>.
+      </p>
+
+      <h2 id="faq">FAQ</h2>
+      <h3>I closed the window — is my session gone?</h3>
+      <p>
+        No. Closing the popup only hides it; the timer keeps running in the background. Click the
+        tray icon to bring it back, and notifications still fire at every phase change.
+      </p>
+      <h3>Does sleep or suspend break the timer?</h3>
+      <p>
+        No. The engine counts real elapsed wall-clock time, so after a sleep the timer is exactly
+        where it should be. If a phase ended while the machine was asleep, kizami moves on correctly
+        when it wakes.
+      </p>
+      <h3>Can I change the 25/5/15 minute durations?</h3>
+      <p>Yes — all three are adjustable in <a href="#settings">Settings</a>.</p>
+      <h3>I don't see a tray icon.</h3>
+      <p>
+        On some Linux desktops (notably GNOME) tray icons require an extension such as
+        <em>AppIndicator and KStatusNotifierItem Support</em>. Install and enable it, then restart
+        kizami.
+      </p>
+      <h3>How do I uninstall cleanly?</h3>
+      <p>
+        Uninstall the app as usual for your OS, then delete the settings folder (see
+        <a href="#data">Where your data lives</a>) if you want to remove every trace.
+      </p>
+
+      <footer>
+        <p>
+          Free &amp; open source (MIT) · <a href="./index.html">Download 刻（kizami）</a> ·
+          <a href="https://github.com/zabuton-app/kizami">Source code on GitHub</a> ·
+          <a href="https://github.com/zabuton-app/kizami/issues">Report an issue</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,66 @@
+appId: dev.amgsk.kizami
+productName: kizami
+directories:
+  buildResources: build
+  output: release
+artifactName: ${productName}-${version}-${platform}-${arch}.${ext}
+files:
+  - out/**
+  - resources/**
+  - package.json
+extraResources:
+  - from: LICENSE
+    to: licenses/LICENSE
+  - from: src/renderer/fonts/OFL.txt
+    to: licenses/Zen-Maru-Gothic-OFL.txt
+electronFuses:
+  # Flipping fuses rewrites the Electron binary, which invalidates the signature
+  # it shipped with. macOS rejects an app with an *invalid* signature outright
+  # ("damaged", with no way to open it), so re-apply an ad-hoc signature after
+  # the flip. CI has no Apple certificate, and this downgrades the failure to the
+  # normal un-notarized prompt a user can allow once in Privacy & Security.
+  resetAdHocDarwinSignature: true
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  loadBrowserProcessSpecificV8Snapshot: false
+  grantFileProtocolExtraPrivileges: false
+linux:
+  # AppImage is required: the AUR package (kizami-bin) takes it as its source.
+  target:
+    - AppImage
+    - tar.xz
+    - deb
+  category: Utility
+  icon: build/icon.png
+  syncDesktopName: true
+appImage:
+  # electron-builder's legacy AppImage target otherwise adds --no-sandbox to
+  # every desktop launch, overriding the renderer sandbox configured by kizami.
+  # The generated AppRun still re-adds the flag at launch when unprivileged user
+  # namespaces are unavailable (it probes with `unshare -Ur true`), so clearing
+  # it here enables the sandbox wherever the kernel allows it without breaking
+  # startup on distributions that restrict user namespaces.
+  executableArgs: []
+mac:
+  target:
+    - dmg
+  icon: build/icon.icns
+  # The CI build is only ad-hoc signed (see electronFuses above), which
+  # `spctl --assess` rejects. Without this, packaging fails instead of producing
+  # the un-notarized dmg we intend to ship.
+  gatekeeperAssess: false
+win:
+  target:
+    - nsis
+    - appx
+  icon: build/icon.ico
+appx:
+  identityName: amgsk.kizami
+  publisher: CN=72C8C359-BF5B-4932-A8A6-9114D02CCAB3
+  publisherDisplayName: amgsk
+  applicationId: Kizami
+  displayName: 刻
