@@ -1,6 +1,11 @@
 import { t } from '../../shared/i18n'
-import { formatTime } from '../../shared/timer-logic'
-import { PROGRESS_BLOCKS, type Language, type TimerSnapshot } from '../../shared/types'
+import { displaySec, formatTime } from '../../shared/timer-logic'
+import {
+  PROGRESS_BLOCKS,
+  type Language,
+  type TimeDisplayMode,
+  type TimerSnapshot
+} from '../../shared/types'
 
 const PALETTE_SIZE = 3
 
@@ -13,6 +18,7 @@ const PHASE_KEY = {
 interface MiniTimerViewProps {
   snapshot: TimerSnapshot
   language: Language
+  timeDisplay: TimeDisplayMode
   onToggle: () => void
   onSkip: () => void
   onExitMini: () => void
@@ -21,6 +27,7 @@ interface MiniTimerViewProps {
 export function MiniTimerView({
   snapshot,
   language,
+  timeDisplay,
   onToggle,
   onSkip,
   onExitMini
@@ -46,7 +53,9 @@ export function MiniTimerView({
         title={phaseLabel}
         style={{ background: snapshot.phase === 'work' ? 'var(--primary)' : 'var(--badge)' }}
       />
-      <div className="mini-bar__time">{formatTime(snapshot.remainingSec)}</div>
+      <div className="mini-bar__time">
+        {formatTime(displaySec(snapshot.remainingSec, snapshot.totalSec, timeDisplay))}
+      </div>
       <div className="mini-bar__blocks">
         {Array.from({ length: PROGRESS_BLOCKS }, (_, i) => (
           <span

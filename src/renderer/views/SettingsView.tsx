@@ -314,6 +314,26 @@ export function SettingsView({
             <span className="switch__knob" />
           </button>
         </div>
+
+        <div className="settings__row">
+          <span className="settings__label">{t(language, 'settings.timeDisplay')}</span>
+          <div className="segmented">
+            <button
+              type="button"
+              className={`segmented__option ${settings.timeDisplay === 'remaining' ? 'segmented__option--active' : ''}`}
+              onClick={() => onUpdate({ timeDisplay: 'remaining' })}
+            >
+              {t(language, 'timeDisplay.remaining')}
+            </button>
+            <button
+              type="button"
+              className={`segmented__option ${settings.timeDisplay === 'elapsed' ? 'segmented__option--active' : ''}`}
+              onClick={() => onUpdate({ timeDisplay: 'elapsed' })}
+            >
+              {t(language, 'timeDisplay.elapsed')}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="settings__card">

@@ -2,9 +2,11 @@ import { asThemeId } from './themes'
 import {
   DEFAULT_SETTINGS,
   SETTINGS_LIMITS,
+  TIME_DISPLAY_MODES,
   TRAY_ICON_IDS,
   type Language,
   type Settings,
+  type TimeDisplayMode,
   type TrayIconId
 } from './types'
 
@@ -29,6 +31,12 @@ function asLanguage(value: unknown, fallback: Language): Language {
 function asTrayIconId(value: unknown, fallback: TrayIconId): TrayIconId {
   return typeof value === 'string' && (TRAY_ICON_IDS as readonly string[]).includes(value)
     ? (value as TrayIconId)
+    : fallback
+}
+
+function asTimeDisplayMode(value: unknown, fallback: TimeDisplayMode): TimeDisplayMode {
+  return typeof value === 'string' && (TIME_DISPLAY_MODES as readonly string[]).includes(value)
+    ? (value as TimeDisplayMode)
     : fallback
 }
 
@@ -62,7 +70,8 @@ export function sanitizeSettings(input: unknown, base: Settings = DEFAULT_SETTIN
     language: asLanguage(raw.language, base.language),
     theme: asThemeId(raw.theme, base.theme),
     miniMode: asBoolean(raw.miniMode, base.miniMode),
-    trayIcon: asTrayIconId(raw.trayIcon, base.trayIcon)
+    trayIcon: asTrayIconId(raw.trayIcon, base.trayIcon),
+    timeDisplay: asTimeDisplayMode(raw.timeDisplay, base.timeDisplay)
   }
 }
 

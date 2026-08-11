@@ -12,6 +12,13 @@ export const TRAY_ICON_IDS: readonly TrayIconId[] = ['kizami', 'tomato']
 
 export const DEFAULT_TRAY_ICON: TrayIconId = 'kizami'
 
+/** Direction the timer reads: time left in the phase, or time spent in it. */
+export type TimeDisplayMode = 'remaining' | 'elapsed'
+
+export const TIME_DISPLAY_MODES: readonly TimeDisplayMode[] = ['remaining', 'elapsed']
+
+export const DEFAULT_TIME_DISPLAY: TimeDisplayMode = 'remaining'
+
 export interface Settings {
   workMinutes: number
   shortBreakMinutes: number
@@ -22,6 +29,7 @@ export interface Settings {
   theme: ThemeId
   miniMode: boolean
   trayIcon: TrayIconId
+  timeDisplay: TimeDisplayMode
 }
 
 export const SETTINGS_LIMITS = {
@@ -40,7 +48,8 @@ export const DEFAULT_SETTINGS: Settings = {
   language: 'en',
   theme: DEFAULT_THEME,
   miniMode: false,
-  trayIcon: DEFAULT_TRAY_ICON
+  trayIcon: DEFAULT_TRAY_ICON,
+  timeDisplay: DEFAULT_TIME_DISPLAY
 }
 
 /** Design size of the popup window; the renderer scales down from this. */

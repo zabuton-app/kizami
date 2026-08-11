@@ -3,6 +3,7 @@ import {
   SESSIONS_PER_CYCLE,
   type Phase,
   type Settings,
+  type TimeDisplayMode,
   type TimerState
 } from './types'
 
@@ -130,6 +131,17 @@ export function filledBlocks(remainingMs: number, totalMs: number): number {
   if (totalMs <= 0) return 0
   const ratio = 1 - remainingMs / totalMs
   return Math.min(PROGRESS_BLOCKS, Math.max(0, Math.round(ratio * PROGRESS_BLOCKS)))
+}
+
+/**
+ * Seconds to show for the current phase, per the user's chosen direction.
+ * `remainingSec` is rounded up by the engine, so the elapsed side comes out
+ * rounded down — which keeps `remaining + elapsed === totalSec` at every tick.
+ */
+export function displaySec(remainingSec: number, totalSec: number, mode: TimeDisplayMode): number {
+  const max = Math.max(0, totalSec)
+  const value = mode === 'elapsed' ? max - remainingSec : remainingSec
+  return Math.min(max, Math.max(0, value))
 }
 
 export function formatTime(remainingSec: number): string {

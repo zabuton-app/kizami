@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import { detectLanguage } from '../shared/settings'
 import { DEFAULT_THEME, THEMES, type ThemeId } from '../shared/themes'
-import type { Language, Settings, TimerSnapshot, UpdateStatus } from '../shared/types'
+import {
+  DEFAULT_TIME_DISPLAY,
+  type Language,
+  type Settings,
+  type TimeDisplayMode,
+  type TimerSnapshot,
+  type UpdateStatus
+} from '../shared/types'
 import { TitleBar } from './components/TitleBar'
 import { MiniTimerView } from './views/MiniTimerView'
 import { SettingsView } from './views/SettingsView'
@@ -76,6 +83,8 @@ export function App(): React.JSX.Element | null {
 
   const theme: ThemeId = settings?.theme ?? DEFAULT_THEME
 
+  const timeDisplay: TimeDisplayMode = settings?.timeDisplay ?? DEFAULT_TIME_DISPLAY
+
   const miniMode = settings?.miniMode ?? false
 
   useEffect(() => {
@@ -136,6 +145,7 @@ export function App(): React.JSX.Element | null {
           <MiniTimerView
             snapshot={snapshot}
             language={language}
+            timeDisplay={timeDisplay}
             onToggle={() => void window.kizami.toggle().then(setSnapshot)}
             onSkip={() => void window.kizami.skip().then(setSnapshot)}
             onExitMini={() =>
@@ -163,6 +173,7 @@ export function App(): React.JSX.Element | null {
               snapshot={snapshot}
               language={language}
               theme={theme}
+              timeDisplay={timeDisplay}
               onToggle={() => void window.kizami.toggle().then(setSnapshot)}
               onSkip={() => void window.kizami.skip().then(setSnapshot)}
               onSelectTheme={(next) =>
