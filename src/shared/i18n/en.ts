@@ -19,6 +19,7 @@ export const en: Record<keyof typeof ja, string> = {
   'settings.workMinutes': 'Focus length',
   'settings.shortBreakMinutes': 'Short break',
   'settings.longBreakMinutes': 'Long break',
+  'settings.sessionsPerCycle': 'Sessions per cycle',
   'settings.autoStart': 'Auto-start',
   'settings.timeDisplay': 'Time display',
   'timeDisplay.remaining': 'Remaining',

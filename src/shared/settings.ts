@@ -65,6 +65,12 @@ export function sanitizeSettings(input: unknown, base: Settings = DEFAULT_SETTIN
       SETTINGS_LIMITS.longBreakMinutes.max,
       base.longBreakMinutes
     ),
+    sessionsPerCycle: clampInt(
+      raw.sessionsPerCycle,
+      SETTINGS_LIMITS.sessionsPerCycle.min,
+      SETTINGS_LIMITS.sessionsPerCycle.max,
+      base.sessionsPerCycle
+    ),
     autoStart: asBoolean(raw.autoStart, base.autoStart),
     taskName: asTaskName(raw.taskName, base.taskName),
     language: asLanguage(raw.language, base.language),

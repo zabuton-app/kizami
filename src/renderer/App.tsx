@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { detectLanguage } from '../shared/settings'
 import { DEFAULT_THEME, THEMES, type ThemeId } from '../shared/themes'
 import {
+  DEFAULT_SETTINGS,
   DEFAULT_TIME_DISPLAY,
   type Language,
   type Settings,
@@ -84,6 +85,8 @@ export function App(): React.JSX.Element | null {
   const theme: ThemeId = settings?.theme ?? DEFAULT_THEME
 
   const timeDisplay: TimeDisplayMode = settings?.timeDisplay ?? DEFAULT_TIME_DISPLAY
+
+  const sessionsPerCycle = settings?.sessionsPerCycle ?? DEFAULT_SETTINGS.sessionsPerCycle
 
   const miniMode = settings?.miniMode ?? false
 
@@ -174,6 +177,7 @@ export function App(): React.JSX.Element | null {
               language={language}
               theme={theme}
               timeDisplay={timeDisplay}
+              sessionsPerCycle={sessionsPerCycle}
               onToggle={() => void window.kizami.toggle().then(setSnapshot)}
               onSkip={() => void window.kizami.skip().then(setSnapshot)}
               onSelectTheme={(next) =>

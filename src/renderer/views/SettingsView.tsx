@@ -303,6 +303,17 @@ export function SettingsView({
         ))}
 
         <div className="settings__row">
+          <span className="settings__label">{t(language, 'settings.sessionsPerCycle')}</span>
+          <Stepper
+            value={settings.sessionsPerCycle}
+            min={SETTINGS_LIMITS.sessionsPerCycle.min}
+            max={SETTINGS_LIMITS.sessionsPerCycle.max}
+            unit=""
+            onChange={(next) => onUpdate({ sessionsPerCycle: next })}
+          />
+        </div>
+
+        <div className="settings__row">
           <span className="settings__label">{t(language, 'settings.autoStart')}</span>
           <button
             type="button"

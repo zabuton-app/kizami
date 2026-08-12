@@ -6,6 +6,7 @@ const current: Settings = {
   workMinutes: 30,
   shortBreakMinutes: 10,
   longBreakMinutes: 20,
+  sessionsPerCycle: 6,
   autoStart: false,
   taskName: 'Review the design spec',
   language: 'ja',
@@ -114,6 +115,37 @@ describe('sanitizeSettings', () => {
     expect(result.workMinutes).toBe(30)
     expect(result.theme).toBe('melonSoda')
   })
+
+  it('accepts an in-range sessions per cycle', () => {
+    expect(sanitizeSettings({ sessionsPerCycle: 1 }).sessionsPerCycle).toBe(1)
+    expect(sanitizeSettings({ sessionsPerCycle: 10 }).sessionsPerCycle).toBe(10)
+  })
+
+  it('clamps out-of-range sessions per cycle to 1..10', () => {
+    expect(sanitizeSettings({ sessionsPerCycle: 0 }).sessionsPerCycle).toBe(1)
+    expect(sanitizeSettings({ sessionsPerCycle: -3 }).sessionsPerCycle).toBe(1)
+    expect(sanitizeSettings({ sessionsPerCycle: 11 }).sessionsPerCycle).toBe(10)
+    expect(sanitizeSettings({ sessionsPerCycle: 999 }).sessionsPerCycle).toBe(10)
+  })
+
+  it('rounds a fractional sessions per cycle', () => {
+    expect(sanitizeSettings({ sessionsPerCycle: 6.6 }).sessionsPerCycle).toBe(7)
+  })
+
+  it('falls back to 4 sessions on invalid values', () => {
+    expect(sanitizeSettings({ sessionsPerCycle: '6' }).sessionsPerCycle).toBe(4)
+    expect(sanitizeSettings({ sessionsPerCycle: NaN }).sessionsPerCycle).toBe(4)
+    expect(sanitizeSettings({ sessionsPerCycle: Infinity }).sessionsPerCycle).toBe(4)
+    expect(sanitizeSettings({ sessionsPerCycle: null }).sessionsPerCycle).toBe(4)
+  })
+
+  it('defaults sessions per cycle to 4 when the field is missing (pre-feature settings file)', () => {
+    const result = sanitizeSettings({ workMinutes: 30, theme: 'melonSoda' })
+    expect(result.sessionsPerCycle).toBe(4)
+    // The missing-field fallback must not cost the settings that were there.
+    expect(result.workMinutes).toBe(30)
+    expect(result.theme).toBe('melonSoda')
+  })
 })
 
 describe('applySettingsUpdate', () => {
@@ -173,6 +205,16 @@ describe('applySettingsUpdate', () => {
 
   it('keeps the current time display on invalid patch values', () => {
     expect(applySettingsUpdate(current, { timeDisplay: 'countdown' }).timeDisplay).toBe('elapsed')
+  })
+
+  it('changes the sessions per cycle and keeps other fields', () => {
+    const result = applySettingsUpdate(current, { sessionsPerCycle: 2 })
+    expect(result).toEqual({ ...current, sessionsPerCycle: 2 })
+  })
+
+  it('keeps the current sessions per cycle on invalid patch values', () => {
+    expect(applySettingsUpdate(current, { sessionsPerCycle: 'many' }).sessionsPerCycle).toBe(6)
+    expect(applySettingsUpdate(current, { sessionsPerCycle: 99 }).sessionsPerCycle).toBe(10)
   })
 
   it('round-trips an updated theme through the sanitizer unchanged', () => {

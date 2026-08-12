@@ -250,12 +250,16 @@
       <ul>
         <li><strong>Focus</strong> — 25 minutes of concentrated work.</li>
         <li><strong>Short break</strong> — 5 minutes to breathe.</li>
-        <li>After four focus sessions, a <strong>long break</strong> — 15 minutes.</li>
+        <li>
+          After four focus sessions (adjustable in Settings), a <strong>long break</strong> — 15
+          minutes.
+        </li>
       </ul>
       <p>
         The <strong>1 / 4</strong> badge in the top corner shows where you are in the current set,
         and the row of blocks under the countdown fills in as the session progresses. All three
-        durations can be changed in <a href="#settings">Settings</a>.
+        durations and the number of sessions per set can be changed in
+        <a href="#settings">Settings</a>.
       </p>
       <div class="card tip">
         <strong>Auto-start.</strong> With auto-start enabled (the default), the next phase begins on
@@ -330,7 +334,7 @@
       <img
         class="shot small"
         src="./assets/shot-settings.png"
-        alt="The kizami settings view with duration steppers, auto-start toggle, time display switch, task name field, language and tray icon switches, and update check"
+        alt="The kizami settings view with duration steppers, sessions per cycle stepper, auto-start toggle, time display switch, task name field, language and tray icon switches, and update check"
       />
       <p>Open Settings with the <strong>gear button</strong> in the popup's title bar.</p>
       <table>
@@ -341,6 +345,13 @@
         <tr>
           <td>Focus length / Short break / Long break</td>
           <td>The duration of each phase, in minutes.</td>
+        </tr>
+        <tr>
+          <td>Sessions per cycle</td>
+          <td>
+            How many focus sessions to complete before the long break (1–10, default 4). With 1,
+            every break is a long break.
+          </td>
         </tr>
         <tr>
           <td>Auto-start</td>
@@ -399,8 +410,8 @@
       </p>
       <ul>
         <li>
-          <code>~/.config/kizami/settings.json</code> — durations, auto-start, time display, task
-          name, language, theme, and window mode.
+          <code>~/.config/kizami/settings.json</code> — durations, sessions per cycle, auto-start,
+          time display, task name, language, theme, and window mode.
         </li>
         <li>
           <code>~/.config/kizami/update.json</code> — update-check state: whether the automatic
@@ -426,7 +437,10 @@
         when it wakes.
       </p>
       <h3>Can I change the 25/5/15 minute durations?</h3>
-      <p>Yes — all three are adjustable in <a href="#settings">Settings</a>.</p>
+      <p>
+        Yes — all three are adjustable in <a href="#settings">Settings</a>, along with how many
+        focus sessions come before the long break.
+      </p>
       <h3>I don't see a tray icon.</h3>
       <p>
         On some Linux desktops (notably GNOME) tray icons require an extension such as

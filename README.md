@@ -11,13 +11,13 @@ get back to focus.
 
 ## Features
 
-- Classic pomodoro cycle: focus (25 min) → short break (5 min) × 4 sessions,
-  then a long break (15 min)
+- Classic pomodoro cycle: focus (25 min) → short break (5 min) × 4 sessions
+  (adjustable), then a long break (15 min)
 - Start / pause / resume / skip controls
 - Tray-resident: the popup can be closed at any time, the timer keeps going
 - Wall-clock based engine: survives window hiding and system sleep without drift
 - Desktop notifications on every phase change
-- Configurable durations, auto-start, task name
+- Configurable durations, sessions per cycle, auto-start, task name
 - Japanese / English UI (auto-detected from the OS locale, switchable in settings)
 - Mini mode: shrink the popup to a slim bar with just the countdown and a
   start/stop button
@@ -25,8 +25,8 @@ get back to focus.
 
 ## Screenshots
 
-Durations, auto-start, task name, language, and the tray icon are all set from
-the settings view:
+Durations, sessions per cycle, auto-start, task name, language, and the tray
+icon are all set from the settings view:
 
 ![The kizami settings view](./docs/assets/shot-settings.png)
 

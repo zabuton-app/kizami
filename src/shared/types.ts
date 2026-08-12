@@ -23,6 +23,7 @@ export interface Settings {
   workMinutes: number
   shortBreakMinutes: number
   longBreakMinutes: number
+  sessionsPerCycle: number
   autoStart: boolean
   taskName: string
   language: Language
@@ -36,6 +37,7 @@ export const SETTINGS_LIMITS = {
   workMinutes: { min: 5, max: 60 },
   shortBreakMinutes: { min: 1, max: 30 },
   longBreakMinutes: { min: 5, max: 60 },
+  sessionsPerCycle: { min: 1, max: 10 },
   taskNameMaxLength: 100
 } as const
 
@@ -43,6 +45,7 @@ export const DEFAULT_SETTINGS: Settings = {
   workMinutes: 25,
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
+  sessionsPerCycle: 4,
   autoStart: true,
   taskName: '',
   language: 'en',
@@ -71,8 +74,6 @@ export const WINDOW_MIN_SCALE = 0.7
  * row of controls (the toggle button plus the bar's padding and border).
  */
 export const WINDOW_MINI_SIZE = { width: 380, height: 58 } as const
-
-export const SESSIONS_PER_CYCLE = 4
 
 export const PROGRESS_BLOCKS = 10
 

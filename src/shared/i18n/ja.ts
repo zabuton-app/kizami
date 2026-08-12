@@ -17,6 +17,7 @@ export const ja = {
   'settings.workMinutes': 'しゅうちゅう時間',
   'settings.shortBreakMinutes': 'ちょっと休憩',
   'settings.longBreakMinutes': 'ながい休憩',
+  'settings.sessionsPerCycle': 'セッションのかず',
   'settings.autoStart': 'じどうスタート',
   'settings.timeDisplay': 'じかんの表示',
   'timeDisplay.remaining': 'のこり',

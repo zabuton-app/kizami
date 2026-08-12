@@ -124,6 +124,91 @@ describe('tick transitions', () => {
   })
 })
 
+describe('tick with a configurable sessions per cycle', () => {
+  it('takes the long break after the configured session count', () => {
+    const twoPerCycle: Settings = { ...DEFAULT_SETTINGS, sessionsPerCycle: 2 }
+    // Session 1 ends -> short break.
+    const first = tick(runningWork(T0, twoPerCycle), twoPerCycle, T0 + 25 * 60_000)
+    expect(first.state.phase).toBe('shortBreak')
+    // Short break ends -> session 2, whose end triggers the long break.
+    const second = tick(first.state, twoPerCycle, T0 + 30 * 60_000)
+    expect(second.state.session).toBe(2)
+    const result = tick(second.state, twoPerCycle, T0 + 55 * 60_000)
+    expect(result.state.phase).toBe('longBreak')
+    expect(result.state.session).toBe(2)
+  })
+
+  it('never takes a short break when the cycle is a single session', () => {
+    const onePerCycle: Settings = { ...DEFAULT_SETTINGS, sessionsPerCycle: 1 }
+    // Run through two full cycles: every work phase must end in a long break.
+    let state = runningWork(T0, onePerCycle)
+    const seen: string[] = []
+    for (let i = 0; i < 4; i++) {
+      const result = tick(state, onePerCycle, (state.endsAt ?? 0) + 1)
+      seen.push(result.state.phase)
+      expect(result.state.session).toBe(1)
+      state = result.state
+    }
+    expect(seen).toEqual(['longBreak', 'work', 'longBreak', 'work'])
+  })
+
+  it('catches up across multiple phases using the configured count', () => {
+    const twoPerCycle: Settings = { ...DEFAULT_SETTINGS, sessionsPerCycle: 2 }
+    // Sleep past work (25) + short break (5) + work (25) and 1 minute into the
+    // long break: the second work phase must resolve to a long break.
+    const now = T0 + 56 * 60_000
+    const result = tick(runningWork(T0, twoPerCycle), twoPerCycle, now)
+    expect(result.transitions).toEqual([
+      { from: 'work', to: 'shortBreak' },
+      { from: 'shortBreak', to: 'work' },
+      { from: 'work', to: 'longBreak' }
+    ])
+    expect(result.state.phase).toBe('longBreak')
+    expect(remainingMsAt(result.state, now)).toBe(14 * 60_000)
+  })
+})
+
+describe('changing sessions per cycle mid-cycle', () => {
+  it('leaves a phase that has not ended untouched', () => {
+    const state = runningWork(T0)
+    const fewer: Settings = { ...DEFAULT_SETTINGS, sessionsPerCycle: 2 }
+    const result = tick(state, fewer, T0 + 60_000)
+    expect(result.transitions).toEqual([])
+    expect(result.state).toBe(state)
+  })
+
+  it('takes the long break when the session already exceeds the new count', () => {
+    const fewer: Settings = { ...DEFAULT_SETTINGS, sessionsPerCycle: 2 }
+    // Session 3 was reached under a larger count, then the setting dropped to 2.
+    const state: TimerState = { ...runningWork(T0, fewer), session: 3 }
+    const result = tick(state, fewer, T0 + 25 * 60_000)
+    expect(result.state.phase).toBe('longBreak')
+    // The session number is shown as-is, never rewritten (clarified behaviour).
+    expect(result.state.session).toBe(3)
+    // The long break still resets the next cycle to session 1.
+    const after = tick(result.state, fewer, (result.state.endsAt ?? 0) + 1)
+    expect(after.state.phase).toBe('work')
+    expect(after.state.session).toBe(1)
+  })
+
+  it('extends the current cycle when the count is raised', () => {
+    const more: Settings = { ...DEFAULT_SETTINGS, sessionsPerCycle: 6 }
+    // Session 4 would have ended the default cycle, but the count is now 6.
+    const state: TimerState = { ...runningWork(T0, more), session: 4 }
+    const result = tick(state, more, T0 + 25 * 60_000)
+    expect(result.state.phase).toBe('shortBreak')
+    expect(result.state.session).toBe(4)
+  })
+
+  it('applies the new count on skip as well', () => {
+    const fewer: Settings = { ...DEFAULT_SETTINGS, sessionsPerCycle: 2 }
+    const state: TimerState = { ...runningWork(T0, fewer), session: 3 }
+    const result = skip(state, fewer, T0 + 60_000)
+    expect(result.state.phase).toBe('longBreak')
+    expect(result.state.session).toBe(3)
+  })
+})
+
 describe('skip', () => {
   it('skips a running phase to the next one from now', () => {
     const state = runningWork(T0)

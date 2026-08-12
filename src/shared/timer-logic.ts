@@ -1,6 +1,5 @@
 import {
   PROGRESS_BLOCKS,
-  SESSIONS_PER_CYCLE,
   type Phase,
   type Settings,
   type TimeDisplayMode,
@@ -46,10 +45,10 @@ export function isFresh(state: TimerState): boolean {
   return !state.started
 }
 
-function nextPhaseOf(state: TimerState): { phase: Phase; session: number } {
+function nextPhaseOf(state: TimerState, settings: Settings): { phase: Phase; session: number } {
   if (state.phase === 'work') {
     return {
-      phase: state.session >= SESSIONS_PER_CYCLE ? 'longBreak' : 'shortBreak',
+      phase: state.session >= settings.sessionsPerCycle ? 'longBreak' : 'shortBreak',
       session: state.session
     }
   }
@@ -64,7 +63,7 @@ function nextPhaseOf(state: TimerState): { phase: Phase; session: number } {
  * With autoStart the new phase starts counting from `at`; otherwise it waits.
  */
 function enterNextPhase(state: TimerState, settings: Settings, at: number): TimerState {
-  const next = nextPhaseOf(state)
+  const next = nextPhaseOf(state, settings)
   const duration = phaseDurationMs(next.phase, settings)
   const running = settings.autoStart
   return {

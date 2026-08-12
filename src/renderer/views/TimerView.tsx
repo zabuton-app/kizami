@@ -3,7 +3,6 @@ import { displaySec, formatTime } from '../../shared/timer-logic'
 import type { ThemeId } from '../../shared/themes'
 import {
   PROGRESS_BLOCKS,
-  SESSIONS_PER_CYCLE,
   type Language,
   type TimeDisplayMode,
   type TimerSnapshot
@@ -17,6 +16,7 @@ interface TimerViewProps {
   language: Language
   theme: ThemeId
   timeDisplay: TimeDisplayMode
+  sessionsPerCycle: number
   onToggle: () => void
   onSkip: () => void
   onSelectTheme: (theme: ThemeId) => void
@@ -33,6 +33,7 @@ export function TimerView({
   language,
   theme,
   timeDisplay,
+  sessionsPerCycle,
   onToggle,
   onSkip,
   onSelectTheme
@@ -50,7 +51,7 @@ export function TimerView({
       <div className="timer__header">
         <span className="timer__phase">{t(language, PHASE_KEY[snapshot.phase])}</span>
         <span className="timer__session">
-          {snapshot.session} / {SESSIONS_PER_CYCLE}
+          {snapshot.session} / {sessionsPerCycle}
         </span>
       </div>
       <div className="timer__card">
