@@ -11,7 +11,8 @@ const current: Settings = {
   language: 'ja',
   theme: 'grapeGummy',
   miniMode: false,
-  trayIcon: 'tomato'
+  trayIcon: 'tomato',
+  timeDisplay: 'elapsed'
 }
 
 describe('sanitizeSettings', () => {
@@ -94,6 +95,25 @@ describe('sanitizeSettings', () => {
   it('defaults trayIcon to kizami when the field is missing (pre-icon settings file)', () => {
     expect(sanitizeSettings({ workMinutes: 30 }).trayIcon).toBe('kizami')
   })
+
+  it('accepts every valid time display mode', () => {
+    expect(sanitizeSettings({ timeDisplay: 'remaining' }).timeDisplay).toBe('remaining')
+    expect(sanitizeSettings({ timeDisplay: 'elapsed' }).timeDisplay).toBe('elapsed')
+  })
+
+  it('falls back to counting down on invalid time display values', () => {
+    expect(sanitizeSettings({ timeDisplay: 'countup' }).timeDisplay).toBe('remaining')
+    expect(sanitizeSettings({ timeDisplay: 42 }).timeDisplay).toBe('remaining')
+    expect(sanitizeSettings({ timeDisplay: null }).timeDisplay).toBe('remaining')
+  })
+
+  it('counts down when the field is missing (pre-feature settings file)', () => {
+    const result = sanitizeSettings({ workMinutes: 30, theme: 'melonSoda' })
+    expect(result.timeDisplay).toBe('remaining')
+    // The unknown-field fallback must not cost the settings that were there.
+    expect(result.workMinutes).toBe(30)
+    expect(result.theme).toBe('melonSoda')
+  })
 })
 
 describe('applySettingsUpdate', () => {
@@ -144,6 +164,15 @@ describe('applySettingsUpdate', () => {
 
   it('keeps the current tray icon on invalid patch values', () => {
     expect(applySettingsUpdate(current, { trayIcon: 'neon' }).trayIcon).toBe('tomato')
+  })
+
+  it('switches the time display and keeps other fields', () => {
+    const result = applySettingsUpdate(current, { timeDisplay: 'remaining' })
+    expect(result).toEqual({ ...current, timeDisplay: 'remaining' })
+  })
+
+  it('keeps the current time display on invalid patch values', () => {
+    expect(applySettingsUpdate(current, { timeDisplay: 'countdown' }).timeDisplay).toBe('elapsed')
   })
 
   it('round-trips an updated theme through the sanitizer unchanged', () => {

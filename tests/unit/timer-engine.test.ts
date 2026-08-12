@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TimerEngine } from '../../src/main/timer-engine'
+import { displaySec } from '../../src/shared/timer-logic'
 import { DEFAULT_SETTINGS, type Settings } from '../../src/shared/types'
 
 const T0 = 1_000_000_000_000
@@ -76,6 +77,40 @@ describe('TimerEngine settings changes', () => {
       totalSec: 30 * 60,
       filledBlocks: 0
     })
+  })
+})
+
+describe('TimerEngine snapshot rounding', () => {
+  // The count-up display is `totalSec - remainingSec`, so it only starts at
+  // 00:00 because `remainingSec` is rounded *up*. Rounding it any other way
+  // would silently make an elapsed phase open at 00:01.
+  it('reports a full phase during its first second, so elapsed reads zero', () => {
+    const settings: Settings = { ...DEFAULT_SETTINGS }
+    const now = vi.spyOn(Date, 'now').mockReturnValue(T0)
+    const engine = new TimerEngine(() => settings)
+
+    engine.toggle()
+    now.mockReturnValue(T0 + 1)
+
+    const snapshot = engine.snapshot()
+    expect(snapshot.remainingSec).toBe(snapshot.totalSec)
+    expect(displaySec(snapshot.remainingSec, snapshot.totalSec, 'elapsed')).toBe(0)
+  })
+
+  // The mirror case: one whole second in, the two directions have to agree.
+  it('keeps remaining and elapsed complementary one second into a phase', () => {
+    const settings: Settings = { ...DEFAULT_SETTINGS }
+    const now = vi.spyOn(Date, 'now').mockReturnValue(T0)
+    const engine = new TimerEngine(() => settings)
+
+    engine.toggle()
+    now.mockReturnValue(T0 + 1000)
+
+    const snapshot = engine.snapshot()
+    expect(displaySec(snapshot.remainingSec, snapshot.totalSec, 'elapsed')).toBe(1)
+    expect(displaySec(snapshot.remainingSec, snapshot.totalSec, 'remaining')).toBe(
+      snapshot.totalSec - 1
+    )
   })
 })
 

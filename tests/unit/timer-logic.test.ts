@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createInitialState,
+  displaySec,
   filledBlocks,
   formatTime,
   isFresh,
@@ -175,5 +176,46 @@ describe('formatTime', () => {
     expect(formatTime(0)).toBe('00:00')
     expect(formatTime(65)).toBe('01:05')
     expect(formatTime(25 * 60)).toBe('25:00')
+  })
+})
+
+describe('displaySec', () => {
+  const total = 25 * 60
+
+  it('returns the remaining seconds unchanged in remaining mode', () => {
+    expect(displaySec(total, total, 'remaining')).toBe(total)
+    expect(displaySec(900, total, 'remaining')).toBe(900)
+    expect(displaySec(0, total, 'remaining')).toBe(0)
+  })
+
+  it('counts up from zero in elapsed mode', () => {
+    // A phase that has never been started shows 00:00, not its full length.
+    expect(displaySec(total, total, 'elapsed')).toBe(0)
+    expect(displaySec(900, total, 'elapsed')).toBe(600)
+    expect(displaySec(1, total, 'elapsed')).toBe(total - 1)
+    expect(displaySec(0, total, 'elapsed')).toBe(total)
+  })
+
+  it('stays within 0..totalSec for both modes', () => {
+    for (const mode of ['remaining', 'elapsed'] as const) {
+      for (const remaining of [-5, 0, 1, 900, total, total + 5]) {
+        const value = displaySec(remaining, total, mode)
+        expect(value).toBeGreaterThanOrEqual(0)
+        expect(value).toBeLessThanOrEqual(total)
+      }
+    }
+  })
+
+  it('keeps remaining + elapsed equal to the phase total', () => {
+    for (const remaining of [0, 1, 599, 900, total]) {
+      expect(
+        displaySec(remaining, total, 'remaining') + displaySec(remaining, total, 'elapsed')
+      ).toBe(total)
+    }
+  })
+
+  it('is safe for a zero total', () => {
+    expect(displaySec(0, 0, 'remaining')).toBe(0)
+    expect(displaySec(0, 0, 'elapsed')).toBe(0)
   })
 })

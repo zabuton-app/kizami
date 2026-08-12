@@ -1,10 +1,11 @@
 import { t } from '../../shared/i18n'
-import { formatTime } from '../../shared/timer-logic'
+import { displaySec, formatTime } from '../../shared/timer-logic'
 import type { ThemeId } from '../../shared/themes'
 import {
   PROGRESS_BLOCKS,
   SESSIONS_PER_CYCLE,
   type Language,
+  type TimeDisplayMode,
   type TimerSnapshot
 } from '../../shared/types'
 import { ThemePicker } from '../components/ThemePicker'
@@ -15,6 +16,7 @@ interface TimerViewProps {
   snapshot: TimerSnapshot
   language: Language
   theme: ThemeId
+  timeDisplay: TimeDisplayMode
   onToggle: () => void
   onSkip: () => void
   onSelectTheme: (theme: ThemeId) => void
@@ -30,6 +32,7 @@ export function TimerView({
   snapshot,
   language,
   theme,
+  timeDisplay,
   onToggle,
   onSkip,
   onSelectTheme
@@ -51,7 +54,9 @@ export function TimerView({
         </span>
       </div>
       <div className="timer__card">
-        <div className="timer__time">{formatTime(snapshot.remainingSec)}</div>
+        <div className="timer__time">
+          {formatTime(displaySec(snapshot.remainingSec, snapshot.totalSec, timeDisplay))}
+        </div>
         <div className="timer__blocks">
           {Array.from({ length: PROGRESS_BLOCKS }, (_, i) => (
             <span

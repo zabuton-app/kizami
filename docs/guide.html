@@ -330,7 +330,7 @@
       <img
         class="shot small"
         src="./assets/shot-settings.png"
-        alt="The kizami settings view with duration steppers, auto-start toggle, task name field, language and tray icon switches, and update check"
+        alt="The kizami settings view with duration steppers, auto-start toggle, time display switch, task name field, language and tray icon switches, and update check"
       />
       <p>Open Settings with the <strong>gear button</strong> in the popup's title bar.</p>
       <table>
@@ -345,6 +345,13 @@
         <tr>
           <td>Auto-start</td>
           <td>Whether the next phase begins automatically when one ends.</td>
+        </tr>
+        <tr>
+          <td>Time display</td>
+          <td>
+            Whether the timer shows the time left in the phase, counting down (the default), or the
+            time spent in it, counting up. Phase lengths and when they end are the same either way.
+          </td>
         </tr>
         <tr>
           <td>Task name</td>
@@ -392,8 +399,8 @@
       </p>
       <ul>
         <li>
-          <code>~/.config/kizami/settings.json</code> — durations, auto-start, task name, language,
-          theme, and window mode.
+          <code>~/.config/kizami/settings.json</code> — durations, auto-start, time display, task
+          name, language, theme, and window mode.
         </li>
         <li>
           <code>~/.config/kizami/update.json</code> — update-check state: whether the automatic

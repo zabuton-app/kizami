@@ -314,6 +314,28 @@ export function SettingsView({
             <span className="switch__knob" />
           </button>
         </div>
+
+        <div className="settings__row">
+          <span className="settings__label">{t(language, 'settings.timeDisplay')}</span>
+          <div className="segmented">
+            <button
+              type="button"
+              className={`segmented__option ${settings.timeDisplay === 'remaining' ? 'segmented__option--active' : ''}`}
+              aria-pressed={settings.timeDisplay === 'remaining'}
+              onClick={() => onUpdate({ timeDisplay: 'remaining' })}
+            >
+              {t(language, 'timeDisplay.remaining')}
+            </button>
+            <button
+              type="button"
+              className={`segmented__option ${settings.timeDisplay === 'elapsed' ? 'segmented__option--active' : ''}`}
+              aria-pressed={settings.timeDisplay === 'elapsed'}
+              onClick={() => onUpdate({ timeDisplay: 'elapsed' })}
+            >
+              {t(language, 'timeDisplay.elapsed')}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="settings__card">
@@ -338,6 +360,7 @@ export function SettingsView({
             <button
               type="button"
               className={`segmented__option ${settings.language === 'ja' ? 'segmented__option--active' : ''}`}
+              aria-pressed={settings.language === 'ja'}
               onClick={() => onUpdate({ language: 'ja' })}
             >
               日本語
@@ -345,6 +368,7 @@ export function SettingsView({
             <button
               type="button"
               className={`segmented__option ${settings.language === 'en' ? 'segmented__option--active' : ''}`}
+              aria-pressed={settings.language === 'en'}
               onClick={() => onUpdate({ language: 'en' })}
             >
               English
@@ -358,6 +382,7 @@ export function SettingsView({
             <button
               type="button"
               className={`segmented__option ${settings.trayIcon === 'kizami' ? 'segmented__option--active' : ''}`}
+              aria-pressed={settings.trayIcon === 'kizami'}
               onClick={() => onUpdate({ trayIcon: 'kizami' })}
             >
               {t(language, 'trayIcon.kizami')}
@@ -365,6 +390,7 @@ export function SettingsView({
             <button
               type="button"
               className={`segmented__option ${settings.trayIcon === 'tomato' ? 'segmented__option--active' : ''}`}
+              aria-pressed={settings.trayIcon === 'tomato'}
               onClick={() => onUpdate({ trayIcon: 'tomato' })}
             >
               {t(language, 'trayIcon.tomato')}
