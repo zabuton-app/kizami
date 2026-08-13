@@ -1,9 +1,11 @@
 import { asThemeId } from './themes'
 import {
+  CLOCK_FORMATS,
   DEFAULT_SETTINGS,
   SETTINGS_LIMITS,
   TIME_DISPLAY_MODES,
   TRAY_ICON_IDS,
+  type ClockFormat,
   type Language,
   type Settings,
   type TimeDisplayMode,
@@ -37,6 +39,12 @@ function asTrayIconId(value: unknown, fallback: TrayIconId): TrayIconId {
 function asTimeDisplayMode(value: unknown, fallback: TimeDisplayMode): TimeDisplayMode {
   return typeof value === 'string' && (TIME_DISPLAY_MODES as readonly string[]).includes(value)
     ? (value as TimeDisplayMode)
+    : fallback
+}
+
+function asClockFormat(value: unknown, fallback: ClockFormat): ClockFormat {
+  return typeof value === 'string' && (CLOCK_FORMATS as readonly string[]).includes(value)
+    ? (value as ClockFormat)
     : fallback
 }
 
@@ -77,7 +85,9 @@ export function sanitizeSettings(input: unknown, base: Settings = DEFAULT_SETTIN
     theme: asThemeId(raw.theme, base.theme),
     miniMode: asBoolean(raw.miniMode, base.miniMode),
     trayIcon: asTrayIconId(raw.trayIcon, base.trayIcon),
-    timeDisplay: asTimeDisplayMode(raw.timeDisplay, base.timeDisplay)
+    timeDisplay: asTimeDisplayMode(raw.timeDisplay, base.timeDisplay),
+    clockMode: asBoolean(raw.clockMode, base.clockMode),
+    clockFormat: asClockFormat(raw.clockFormat, base.clockFormat)
   }
 }
 

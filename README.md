@@ -21,12 +21,14 @@ get back to focus.
 - Japanese / English UI (auto-detected from the OS locale, switchable in settings)
 - Mini mode: shrink the popup to a slim bar with just the countdown and a
   start/stop button
+- Clock mode: turn the popup into a desk clock (hh:mm or hh:mm:ss) with a
+  bar showing how much of the day has passed, while the timer keeps running
 - Custom window decoration, identical on Linux, macOS and Windows
 
 ## Screenshots
 
-Durations, sessions per cycle, auto-start, task name, language, and the tray
-icon are all set from the settings view:
+Durations, sessions per cycle, auto-start, time display, clock format, task
+name, language, and the tray icon are all set from the settings view:
 
 ![The kizami settings view](./docs/assets/shot-settings.png)
 

@@ -13,7 +13,9 @@ const current: Settings = {
   theme: 'grapeGummy',
   miniMode: false,
   trayIcon: 'tomato',
-  timeDisplay: 'elapsed'
+  timeDisplay: 'elapsed',
+  clockMode: true,
+  clockFormat: 'hhmmss'
 }
 
 describe('sanitizeSettings', () => {
@@ -116,6 +118,37 @@ describe('sanitizeSettings', () => {
     expect(result.theme).toBe('melonSoda')
   })
 
+  it('accepts a boolean clockMode', () => {
+    expect(sanitizeSettings({ clockMode: true }).clockMode).toBe(true)
+    expect(sanitizeSettings({ clockMode: false }).clockMode).toBe(false)
+  })
+
+  it('falls back to the base clockMode on non-boolean values', () => {
+    expect(sanitizeSettings({ clockMode: 'yes' }).clockMode).toBe(false)
+    expect(sanitizeSettings({ clockMode: 1 }).clockMode).toBe(false)
+    expect(sanitizeSettings({ clockMode: null }).clockMode).toBe(false)
+  })
+
+  it('accepts every valid clock format', () => {
+    expect(sanitizeSettings({ clockFormat: 'hhmm' }).clockFormat).toBe('hhmm')
+    expect(sanitizeSettings({ clockFormat: 'hhmmss' }).clockFormat).toBe('hhmmss')
+  })
+
+  it('falls back to hh:mm on invalid clock format values', () => {
+    expect(sanitizeSettings({ clockFormat: 'banana' }).clockFormat).toBe('hhmm')
+    expect(sanitizeSettings({ clockFormat: 42 }).clockFormat).toBe('hhmm')
+    expect(sanitizeSettings({ clockFormat: null }).clockFormat).toBe('hhmm')
+  })
+
+  it('keeps the timer view when the fields are missing (pre-clock settings file)', () => {
+    const result = sanitizeSettings({ workMinutes: 30, theme: 'melonSoda' })
+    expect(result.clockMode).toBe(false)
+    expect(result.clockFormat).toBe('hhmm')
+    // The missing-field fallback must not cost the settings that were there.
+    expect(result.workMinutes).toBe(30)
+    expect(result.theme).toBe('melonSoda')
+  })
+
   it('accepts an in-range sessions per cycle', () => {
     expect(sanitizeSettings({ sessionsPerCycle: 1 }).sessionsPerCycle).toBe(1)
     expect(sanitizeSettings({ sessionsPerCycle: 10 }).sessionsPerCycle).toBe(10)
@@ -205,6 +238,24 @@ describe('applySettingsUpdate', () => {
 
   it('keeps the current time display on invalid patch values', () => {
     expect(applySettingsUpdate(current, { timeDisplay: 'countdown' }).timeDisplay).toBe('elapsed')
+  })
+
+  it('toggles clockMode and keeps other fields', () => {
+    const result = applySettingsUpdate(current, { clockMode: false })
+    expect(result).toEqual({ ...current, clockMode: false })
+  })
+
+  it('keeps the current clockMode on invalid patch values', () => {
+    expect(applySettingsUpdate(current, { clockMode: 'off' }).clockMode).toBe(true)
+  })
+
+  it('switches the clock format and keeps other fields', () => {
+    const result = applySettingsUpdate(current, { clockFormat: 'hhmm' })
+    expect(result).toEqual({ ...current, clockFormat: 'hhmm' })
+  })
+
+  it('keeps the current clock format on invalid patch values', () => {
+    expect(applySettingsUpdate(current, { clockFormat: 'seconds' }).clockFormat).toBe('hhmmss')
   })
 
   it('changes the sessions per cycle and keeps other fields', () => {

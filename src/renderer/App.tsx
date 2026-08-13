@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { detectLanguage } from '../shared/settings'
 import { DEFAULT_THEME, THEMES, type ThemeId } from '../shared/themes'
 import {
+  DEFAULT_CLOCK_FORMAT,
   DEFAULT_SETTINGS,
   DEFAULT_TIME_DISPLAY,
+  type ClockFormat,
   type Language,
   type Settings,
   type TimeDisplayMode,
@@ -11,6 +13,8 @@ import {
   type UpdateStatus
 } from '../shared/types'
 import { TitleBar } from './components/TitleBar'
+import { ClockView } from './views/ClockView'
+import { MiniClockView } from './views/MiniClockView'
 import { MiniTimerView } from './views/MiniTimerView'
 import { SettingsView } from './views/SettingsView'
 import { TimerView } from './views/TimerView'
@@ -90,6 +94,10 @@ export function App(): React.JSX.Element | null {
 
   const miniMode = settings?.miniMode ?? false
 
+  const clockMode = settings?.clockMode ?? false
+
+  const clockFormat: ClockFormat = settings?.clockFormat ?? DEFAULT_CLOCK_FORMAT
+
   useEffect(() => {
     applyThemeTokens(theme)
   }, [theme])
@@ -144,17 +152,27 @@ export function App(): React.JSX.Element | null {
   if (showMiniBar) {
     return (
       <div className="app app--mini">
-        {snapshot && (
-          <MiniTimerView
-            snapshot={snapshot}
+        {clockMode ? (
+          <MiniClockView
+            clockFormat={clockFormat}
             language={language}
-            timeDisplay={timeDisplay}
-            onToggle={() => void window.kizami.toggle().then(setSnapshot)}
-            onSkip={() => void window.kizami.skip().then(setSnapshot)}
             onExitMini={() =>
               void window.kizami.updateSettings({ miniMode: false }).then(setSettings)
             }
           />
+        ) : (
+          snapshot && (
+            <MiniTimerView
+              snapshot={snapshot}
+              language={language}
+              timeDisplay={timeDisplay}
+              onToggle={() => void window.kizami.toggle().then(setSnapshot)}
+              onSkip={() => void window.kizami.skip().then(setSnapshot)}
+              onExitMini={() =>
+                void window.kizami.updateSettings({ miniMode: false }).then(setSettings)
+              }
+            />
+          )
         )}
       </div>
     )
@@ -166,32 +184,49 @@ export function App(): React.JSX.Element | null {
         settingsOpen={view === 'settings'}
         language={language}
         updateAvailable={updateStatus?.available ?? false}
+        clockMode={clockMode}
         onClose={() => void window.kizami.hideWindow()}
         onToggleSettings={() => setView((v) => (v === 'timer' ? 'settings' : 'timer'))}
         onToggleMini={() => void window.kizami.updateSettings({ miniMode: true }).then(setSettings)}
+        onToggleClock={() =>
+          void window.kizami.updateSettings({ clockMode: !clockMode }).then(setSettings)
+        }
       />
-      {view === 'timer'
-        ? snapshot && (
-            <TimerView
-              snapshot={snapshot}
-              language={language}
-              theme={theme}
-              timeDisplay={timeDisplay}
-              sessionsPerCycle={sessionsPerCycle}
-              onToggle={() => void window.kizami.toggle().then(setSnapshot)}
-              onSkip={() => void window.kizami.skip().then(setSnapshot)}
-              onSelectTheme={(next) =>
-                void window.kizami.updateSettings({ theme: next }).then(setSettings)
-              }
-            />
-          )
-        : settings && (
+      {view === 'settings'
+        ? settings && (
             <SettingsView
               settings={settings}
               language={language}
               onUpdate={(patch) => void window.kizami.updateSettings(patch).then(setSettings)}
             />
-          )}
+          )
+        : clockMode
+          ? snapshot && (
+              <ClockView
+                snapshot={snapshot}
+                language={language}
+                theme={theme}
+                sessionsPerCycle={sessionsPerCycle}
+                clockFormat={clockFormat}
+                onSelectTheme={(next) =>
+                  void window.kizami.updateSettings({ theme: next }).then(setSettings)
+                }
+              />
+            )
+          : snapshot && (
+              <TimerView
+                snapshot={snapshot}
+                language={language}
+                theme={theme}
+                timeDisplay={timeDisplay}
+                sessionsPerCycle={sessionsPerCycle}
+                onToggle={() => void window.kizami.toggle().then(setSnapshot)}
+                onSkip={() => void window.kizami.skip().then(setSnapshot)}
+                onSelectTheme={(next) =>
+                  void window.kizami.updateSettings({ theme: next }).then(setSettings)
+                }
+              />
+            )}
     </div>
   )
 }

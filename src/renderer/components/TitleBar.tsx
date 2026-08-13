@@ -10,9 +10,30 @@ interface TitleBarProps {
   settingsOpen: boolean
   /** A newer, non-skipped release was detected; marks the gear with a dot. */
   updateAvailable: boolean
+  /** Whether the window currently shows the clock instead of the timer. */
+  clockMode: boolean
   onClose: () => void
   onToggleMini: () => void
+  onToggleClock: () => void
   onToggleSettings: () => void
+}
+
+function ClockToggleIcon(): React.JSX.Element {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2.5" />
+    </svg>
+  )
 }
 
 function MiniToggleIcon(): React.JSX.Element {
@@ -39,8 +60,10 @@ export function TitleBar({
   language,
   settingsOpen,
   updateAvailable,
+  clockMode,
   onClose,
   onToggleMini,
+  onToggleClock,
   onToggleSettings
 }: TitleBarProps): React.JSX.Element {
   return (
@@ -62,6 +85,17 @@ export function TitleBar({
           onClick={onToggleMini}
         >
           <MiniToggleIcon />
+        </button>
+      )}
+      {!settingsOpen && (
+        <button
+          type="button"
+          className="titlebar__clock"
+          aria-label={t(language, clockMode ? 'titlebar.timer' : 'titlebar.clock')}
+          aria-pressed={clockMode}
+          onClick={onToggleClock}
+        >
+          <ClockToggleIcon />
         </button>
       )}
       <button
