@@ -19,6 +19,13 @@ export const TIME_DISPLAY_MODES: readonly TimeDisplayMode[] = ['remaining', 'ela
 
 export const DEFAULT_TIME_DISPLAY: TimeDisplayMode = 'remaining'
 
+/** How the clock-mode time of day reads: with or without seconds (24-hour). */
+export type ClockFormat = 'hhmm' | 'hhmmss'
+
+export const CLOCK_FORMATS: readonly ClockFormat[] = ['hhmm', 'hhmmss']
+
+export const DEFAULT_CLOCK_FORMAT: ClockFormat = 'hhmm'
+
 export interface Settings {
   workMinutes: number
   shortBreakMinutes: number
@@ -31,6 +38,8 @@ export interface Settings {
   miniMode: boolean
   trayIcon: TrayIconId
   timeDisplay: TimeDisplayMode
+  clockMode: boolean
+  clockFormat: ClockFormat
 }
 
 export const SETTINGS_LIMITS = {
@@ -52,7 +61,9 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: DEFAULT_THEME,
   miniMode: false,
   trayIcon: DEFAULT_TRAY_ICON,
-  timeDisplay: DEFAULT_TIME_DISPLAY
+  timeDisplay: DEFAULT_TIME_DISPLAY,
+  clockMode: false,
+  clockFormat: DEFAULT_CLOCK_FORMAT
 }
 
 /** Design size of the popup window; the renderer scales down from this. */

@@ -207,6 +207,7 @@
         <li><a href="#cycle">The pomodoro cycle</a></li>
         <li><a href="#controls">Running a session</a></li>
         <li><a href="#mini">Mini mode</a></li>
+        <li><a href="#clock">Clock mode</a></li>
         <li><a href="#tray">The tray icon and quitting</a></li>
         <li><a href="#notifications">Notifications</a></li>
         <li><a href="#settings">Settings</a></li>
@@ -309,6 +310,27 @@
         <li>kizami remembers which mode you were in and reopens the same way next time.</li>
       </ul>
 
+      <h2 id="clock">Clock mode</h2>
+      <p>
+        Click the <strong>clock button</strong> in the popup's title bar to turn the popup into a
+        clock. The layout stays the same — only the readout changes: the header reads
+        <strong>Clock Mode</strong>, the big number shows the current time of day, and the progress
+        blocks fill as the day goes by — empty at midnight, half full at noon. The timer buttons and
+        theme picker stay visible but disabled. The pomodoro timer keeps running in the background
+        and phase notifications still arrive; click the button again to get back to the timer.
+      </p>
+      <ul>
+        <li>
+          The time is shown in 24-hour notation, as <strong>hh:mm</strong> or
+          <strong>hh:mm:ss</strong> — pick the format in <a href="#settings">Settings</a>.
+        </li>
+        <li>
+          Clock mode works in <a href="#mini">mini mode</a> too: the bar shows the time, the day
+          progress, and the expand button.
+        </li>
+        <li>kizami remembers the mode and reopens the same way next time.</li>
+      </ul>
+
       <h2 id="tray">The tray icon and quitting</h2>
       <p>
         kizami is a tray app: <strong>closing the popup does not quit it</strong>. The timer keeps
@@ -334,7 +356,7 @@
       <img
         class="shot small"
         src="./assets/shot-settings.png"
-        alt="The kizami settings view with duration steppers, sessions per cycle stepper, auto-start toggle, time display switch, task name field, language and tray icon switches, and update check"
+        alt="The kizami settings view with duration steppers, sessions per cycle stepper, auto-start toggle, time display switch, clock display switch, task name field, language and tray icon switches, and update check"
       />
       <p>Open Settings with the <strong>gear button</strong> in the popup's title bar.</p>
       <table>
@@ -362,6 +384,13 @@
           <td>
             Whether the timer shows the time left in the phase, counting down (the default), or the
             time spent in it, counting up. Phase lengths and when they end are the same either way.
+          </td>
+        </tr>
+        <tr>
+          <td>Clock display</td>
+          <td>
+            The time format used by <a href="#clock">clock mode</a>: hh:mm (the default) or
+            hh:mm:ss.
           </td>
         </tr>
         <tr>
@@ -411,7 +440,7 @@
       <ul>
         <li>
           <code>~/.config/kizami/settings.json</code> — durations, sessions per cycle, auto-start,
-          time display, task name, language, theme, and window mode.
+          time display, clock mode and its format, task name, language, theme, and window mode.
         </li>
         <li>
           <code>~/.config/kizami/update.json</code> — update-check state: whether the automatic

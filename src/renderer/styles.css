@@ -122,7 +122,8 @@ body {
 }
 
 .titlebar__gear,
-.titlebar__mini {
+.titlebar__mini,
+.titlebar__clock {
   -webkit-app-region: no-drag;
   border: none;
   background: transparent;
@@ -134,7 +135,14 @@ body {
 }
 
 .titlebar__gear:hover,
-.titlebar__mini:hover {
+.titlebar__mini:hover,
+.titlebar__clock:hover {
+  color: var(--ink);
+}
+
+/* While clock mode is on, its toggle stays highlighted so the pressed state
+   is visible without hovering. */
+.titlebar__clock[aria-pressed='true'] {
   color: var(--ink);
 }
 
@@ -191,6 +199,14 @@ body {
   font-size: 64px;
   line-height: 1;
   letter-spacing: -1px;
+}
+
+/* Clock mode's hh:mm:ss is eight characters where the countdown has five, so
+   it steps down to keep fitting the card at the narrowest window width;
+   tabular digits keep the seconds from wobbling the layout every tick. */
+.timer__time--seconds {
+  font-size: 46px;
+  font-variant-numeric: tabular-nums;
 }
 
 .timer__blocks {
@@ -381,6 +397,16 @@ body {
   transform: scale(1.15);
 }
 
+/* Clock mode shows the picker without enabling it. */
+.theme-picker__dot:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.theme-picker__dot:disabled:hover {
+  transform: none;
+}
+
 .theme-picker__dot--active {
   border-color: var(--ink);
 }
@@ -408,6 +434,17 @@ body {
 .btn:active {
   transform: translateY(5px);
   box-shadow: 0 0 0 var(--ink);
+}
+
+/* Clock mode keeps the timer's controls in place but inert. */
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn:disabled:hover {
+  transform: none;
+  box-shadow: 0 5px 0 var(--ink);
 }
 
 .btn--primary {

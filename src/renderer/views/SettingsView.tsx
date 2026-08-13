@@ -347,6 +347,28 @@ export function SettingsView({
             </button>
           </div>
         </div>
+
+        <div className="settings__row">
+          <span className="settings__label">{t(language, 'settings.clockFormat')}</span>
+          <div className="segmented">
+            <button
+              type="button"
+              className={`segmented__option ${settings.clockFormat === 'hhmm' ? 'segmented__option--active' : ''}`}
+              aria-pressed={settings.clockFormat === 'hhmm'}
+              onClick={() => onUpdate({ clockFormat: 'hhmm' })}
+            >
+              {t(language, 'clockFormat.hhmm')}
+            </button>
+            <button
+              type="button"
+              className={`segmented__option ${settings.clockFormat === 'hhmmss' ? 'segmented__option--active' : ''}`}
+              aria-pressed={settings.clockFormat === 'hhmmss'}
+              onClick={() => onUpdate({ clockFormat: 'hhmmss' })}
+            >
+              {t(language, 'clockFormat.hhmmss')}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="settings__card">

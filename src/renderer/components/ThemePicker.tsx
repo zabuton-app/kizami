@@ -5,10 +5,17 @@ import type { Language } from '../../shared/types'
 interface ThemePickerProps {
   language: Language
   theme: ThemeId
-  onSelect: (theme: ThemeId) => void
+  /** Renders the dots inert (clock mode shows the picker without enabling it). */
+  disabled?: boolean
+  onSelect?: (theme: ThemeId) => void
 }
 
-export function ThemePicker({ language, theme, onSelect }: ThemePickerProps): React.JSX.Element {
+export function ThemePicker({
+  language,
+  theme,
+  disabled = false,
+  onSelect
+}: ThemePickerProps): React.JSX.Element {
   return (
     <div className="theme-picker">
       {THEME_IDS.map((id) => (
@@ -19,8 +26,9 @@ export function ThemePicker({ language, theme, onSelect }: ThemePickerProps): Re
           title={t(language, `theme.${id}` as MessageKey)}
           aria-label={t(language, `theme.${id}` as MessageKey)}
           aria-pressed={id === theme}
+          disabled={disabled}
           style={{ background: THEMES[id].dot }}
-          onClick={() => onSelect(id)}
+          onClick={() => onSelect?.(id)}
         />
       ))}
     </div>
