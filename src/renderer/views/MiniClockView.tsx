@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { DAY_MS, formatClock, msIntoDay } from '../../shared/clock'
+import { DAY_MS, formatClock, formatClockDate, msIntoDay, WEEKDAY_KEYS } from '../../shared/clock'
 import { t } from '../../shared/i18n'
 import { filledBlocks } from '../../shared/timer-logic'
 import { PROGRESS_BLOCKS, type ClockFormat, type Language } from '../../shared/types'
@@ -60,6 +60,14 @@ export function MiniClockView({
           />
         ))}
       </div>
+      <span className="mini-bar__date">
+        {formatClockDate(
+          now.getMonth() + 1,
+          now.getDate(),
+          t(language, WEEKDAY_KEYS[now.getDay()]),
+          language
+        )}
+      </span>
       <button
         type="button"
         className="mini-bar__icon-btn"

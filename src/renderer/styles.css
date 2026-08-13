@@ -199,6 +199,10 @@ body {
   font-size: 64px;
   line-height: 1;
   letter-spacing: -1px;
+  /* Zen Maru Gothic's digits are proportional (a lone 1 is much narrower),
+     so a ticking readout would sway sideways every second without fixed-
+     width digits. Shared by the countdown and clock mode's time of day. */
+  font-variant-numeric: tabular-nums;
 }
 
 .timer__blocks {
@@ -290,6 +294,19 @@ body {
   max-width: 12px;
   height: 8px;
   border-radius: 3px;
+}
+
+/* Clock mode's date sits where the timer bar keeps its control buttons. */
+.mini-bar__date {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--sub);
+  flex: none;
+  white-space: nowrap;
+  /* Zen Maru Gothic draws its glyphs low in the line box (see
+     .mini-bar__time); nudge the date up until it is vertically centered on
+     the progress blocks beside it. */
+  transform: translateY(-2px);
 }
 
 .mini-bar__toggle {

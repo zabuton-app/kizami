@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { DAY_MS, formatClock, msIntoDay } from '../../src/shared/clock'
+import {
+  DAY_MS,
+  formatClock,
+  formatClockDate,
+  msIntoDay,
+  WEEKDAY_KEYS
+} from '../../src/shared/clock'
 import { filledBlocks } from '../../src/shared/timer-logic'
 
 describe('formatClock', () => {
@@ -20,6 +26,42 @@ describe('formatClock', () => {
 
   it('ignores the seconds component in hh:mm', () => {
     expect(formatClock(12, 30, 59, 'hhmm')).toBe('12:30')
+  })
+})
+
+describe('formatClockDate', () => {
+  it('formats ja as M/D（曜）', () => {
+    expect(formatClockDate(8, 13, '水', 'ja')).toBe('8/13（水）')
+    expect(formatClockDate(12, 31, '木', 'ja')).toBe('12/31（木）')
+  })
+
+  it('formats en as Www M/D', () => {
+    expect(formatClockDate(8, 13, 'Wed', 'en')).toBe('Wed 8/13')
+    expect(formatClockDate(1, 1, 'Thu', 'en')).toBe('Thu 1/1')
+  })
+
+  it('does not zero-pad month or day', () => {
+    expect(formatClockDate(1, 2, '金', 'ja')).toBe('1/2（金）')
+  })
+})
+
+describe('WEEKDAY_KEYS', () => {
+  it('covers all seven days', () => {
+    expect(WEEKDAY_KEYS).toHaveLength(7)
+  })
+
+  // Date#getDay() counts from Sunday; a rotated array would still satisfy
+  // the length check, so pin every index explicitly.
+  it.each([
+    [0, 'weekday.sun'],
+    [1, 'weekday.mon'],
+    [2, 'weekday.tue'],
+    [3, 'weekday.wed'],
+    [4, 'weekday.thu'],
+    [5, 'weekday.fri'],
+    [6, 'weekday.sat']
+  ])('maps getDay() %i to %s', (index, key) => {
+    expect(WEEKDAY_KEYS[index]).toBe(key)
   })
 })
 
