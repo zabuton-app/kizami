@@ -1,7 +1,7 @@
 import type { MessageKey } from './i18n'
 import type { ClockFormat, Language } from './types'
 
-/** Length of a civil day in milliseconds. */
+/** Length of a 24-hour day in milliseconds (fixed; DST shifts are ignored). */
 export const DAY_MS = 86_400_000
 
 function pad2(value: number): string {
@@ -23,7 +23,10 @@ export function formatClock(
   return format === 'hhmmss' ? `${base}:${pad2(seconds)}` : base
 }
 
-/** Milliseconds elapsed since local midnight; always in [0, DAY_MS). */
+/**
+ * Milliseconds elapsed since local midnight. Assumes the components come
+ * from a local Date's getters; the result is not clamped to [0, DAY_MS).
+ */
 export function msIntoDay(hours: number, minutes: number, seconds: number, ms: number): number {
   return ((hours * 60 + minutes) * 60 + seconds) * 1000 + ms
 }
