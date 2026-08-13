@@ -1,6 +1,6 @@
 {
   "name": "kizami",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "刻 (kizami) - a tray-resident pomodoro timer",
   "type": "module",
   "main": "./out/main/index.js",
