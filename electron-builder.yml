@@ -63,4 +63,6 @@ appx:
   publisher: CN=72C8C359-BF5B-4932-A8A6-9114D02CCAB3
   publisherDisplayName: amgsk
   applicationId: Kizami
-  displayName: 刻
+  # Must match the name reserved in Partner Center exactly (case included):
+  # the Store rejects the package when Package/Properties/DisplayName differs.
+  displayName: kizami

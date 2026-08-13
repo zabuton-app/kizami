@@ -60,10 +60,11 @@ export function isAllowedReleaseUrl(url: unknown): boolean {
 }
 
 /**
- * Microsoft Store product ID (Partner Center → Product identity). Null until
- * the Store listing exists — fill it in when kizami is submitted to the Store.
+ * Microsoft Store product ID (Partner Center → Product identity). Typed as
+ * nullable so the no-listing path stays exercised for apps that have not been
+ * submitted yet.
  */
-export const MS_STORE_PRODUCT_ID: string | null = null
+export const MS_STORE_PRODUCT_ID: string | null = '9NQLKSMBFKH0'
 
 /** Store product page URL, or null when no Store listing exists yet. */
 export function msStoreProductUrl(): string | null {
