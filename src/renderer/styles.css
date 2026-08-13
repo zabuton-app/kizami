@@ -201,14 +201,6 @@ body {
   letter-spacing: -1px;
 }
 
-/* Clock mode's hh:mm:ss is eight characters where the countdown has five, so
-   it steps down to keep fitting the card at the narrowest window width;
-   tabular digits keep the seconds from wobbling the layout every tick. */
-.timer__time--seconds {
-  font-size: 46px;
-  font-variant-numeric: tabular-nums;
-}
-
 .timer__blocks {
   display: flex;
   gap: 5px;
@@ -395,16 +387,6 @@ body {
 
 .theme-picker__dot:hover {
   transform: scale(1.15);
-}
-
-/* Clock mode shows the picker without enabling it. */
-.theme-picker__dot:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.theme-picker__dot:disabled:hover {
-  transform: none;
 }
 
 .theme-picker__dot--active {

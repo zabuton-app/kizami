@@ -19,22 +19,24 @@ interface ClockViewProps {
   theme: ThemeId
   sessionsPerCycle: number
   clockFormat: ClockFormat
+  onSelectTheme: (theme: ThemeId) => void
 }
 
 /**
  * Clock mode's normal-window view. It mirrors the timer view's layout — the
- * header, card, buttons, task line and theme picker all stay in place, only
- * disabled — while the card shows the time of day and how much of the
- * 24-hour day has passed. The pomodoro timer keeps running untouched in the
- * main process; the snapshot is only read for the labels the timer view
- * would show.
+ * header, card, buttons, task line and theme picker all stay in place, with
+ * the timer controls disabled but the theme picker still live — while the
+ * card shows the time of day and how much of the 24-hour day has passed.
+ * The pomodoro timer keeps running untouched in the main process; the
+ * snapshot is only read for the labels the timer view would show.
  */
 export function ClockView({
   snapshot,
   language,
   theme,
   sessionsPerCycle,
-  clockFormat
+  clockFormat,
+  onSelectTheme
 }: ClockViewProps): React.JSX.Element {
   const [now, setNow] = useState(() => new Date())
 
@@ -76,7 +78,7 @@ export function ClockView({
         </span>
       </div>
       <div className="timer__card">
-        <div className={`timer__time ${clockFormat === 'hhmmss' ? 'timer__time--seconds' : ''}`}>
+        <div className="timer__time">
           {formatClock(now.getHours(), now.getMinutes(), now.getSeconds(), clockFormat)}
         </div>
         <div className="timer__blocks">
@@ -103,7 +105,7 @@ export function ClockView({
       <div className="timer__task">
         {t(language, 'timer.taskLabel')}: {taskName}
       </div>
-      <ThemePicker language={language} theme={theme} disabled />
+      <ThemePicker language={language} theme={theme} onSelect={onSelectTheme} />
     </div>
   )
 }

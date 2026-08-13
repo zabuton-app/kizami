@@ -208,6 +208,9 @@ export function App(): React.JSX.Element | null {
                 theme={theme}
                 sessionsPerCycle={sessionsPerCycle}
                 clockFormat={clockFormat}
+                onSelectTheme={(next) =>
+                  void window.kizami.updateSettings({ theme: next }).then(setSettings)
+                }
               />
             )
           : snapshot && (
