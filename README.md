@@ -64,8 +64,16 @@ Mini mode shrinks the popup to a slim horizontal bar that stays out of the way:
 
 ## Install
 
+Windows users can install kizami from the
+[Microsoft Store](https://apps.microsoft.com/detail/9NQLKSMBFKH0).
+
+[![Get it from Microsoft](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/9NQLKSMBFKH0)
+
+Prebuilt packages for all platforms are also available:
+
 | Channel                                                             | Platform                | Notes                                            |
 | ------------------------------------------------------------------- | ----------------------- | ------------------------------------------------ |
+| [Microsoft Store](https://apps.microsoft.com/detail/9NQLKSMBFKH0)   | Windows                 | Installs and updates are managed by the Store    |
 | [GitHub Releases](https://github.com/zabuton-app/kizami/releases)   | Linux / macOS / Windows | AppImage, tar.xz, deb, dmg, and installer builds |
 | AUR ([`kizami-bin`](https://aur.archlinux.org/packages/kizami-bin)) | Arch Linux              | Binary package built from the released AppImage  |
 
@@ -73,9 +81,6 @@ Mini mode shrinks the popup to a slim horizontal bar that stays out of the way:
 yay -S kizami-bin
 # or: paru -S kizami-bin
 ```
-
-Microsoft Store distribution is planned; the appx package is already built with
-each release.
 
 The app checks GitHub Releases for a newer version on startup and only tells you
 about it — it never downloads or installs anything on its own. Automatic
