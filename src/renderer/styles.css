@@ -613,6 +613,37 @@ body {
   color: var(--primary-text);
 }
 
+/* The app's only native select. Sized and bordered like the pill controls on
+   the neighbouring settings rows, and painted from the theme tokens so it
+   follows all five themes. The dropdown list is drawn by the platform, so the
+   options carry the card colors too — otherwise the dark theme opens a white
+   popup. */
+.tz-select {
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 6px 8px 6px 14px;
+  max-width: 60%;
+  cursor: pointer;
+}
+
+.tz-select option,
+.tz-select optgroup {
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* The default focus ring is nearly invisible on the dark theme's card, so
+   draw it in the theme's ink, as the mini bar already does. */
+.tz-select:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
 .update__btn {
   font-family: var(--font);
   font-weight: 900;
