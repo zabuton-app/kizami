@@ -1,4 +1,5 @@
 import { asThemeId } from './themes'
+import { isCuratedZone, type SecondaryTimeZone } from './timezones'
 import {
   CLOCK_FORMATS,
   DEFAULT_SETTINGS,
@@ -49,6 +50,20 @@ function asClockFormat(value: unknown, fallback: ClockFormat): ClockFormat {
 }
 
 /**
+ * Validate a stored or patched comparison timezone. `null` is a real choice
+ * ("not set"), not a missing value: falling back on it would leave the user
+ * unable to turn the comparison row off once a zone had been picked. A zone
+ * the catalog no longer offers falls back, since nothing could select it again.
+ */
+export function asSecondaryTimeZone(
+  value: unknown,
+  fallback: SecondaryTimeZone
+): SecondaryTimeZone {
+  if (value === null) return null
+  return isCuratedZone(value) ? value : fallback
+}
+
+/**
  * Coerce arbitrary (possibly corrupted) data into a valid Settings object.
  * Out-of-range numbers are clamped; wrong types fall back to defaults.
  */
@@ -87,7 +102,8 @@ export function sanitizeSettings(input: unknown, base: Settings = DEFAULT_SETTIN
     trayIcon: asTrayIconId(raw.trayIcon, base.trayIcon),
     timeDisplay: asTimeDisplayMode(raw.timeDisplay, base.timeDisplay),
     clockMode: asBoolean(raw.clockMode, base.clockMode),
-    clockFormat: asClockFormat(raw.clockFormat, base.clockFormat)
+    clockFormat: asClockFormat(raw.clockFormat, base.clockFormat),
+    secondaryTimeZone: asSecondaryTimeZone(raw.secondaryTimeZone, base.secondaryTimeZone)
   }
 }
 

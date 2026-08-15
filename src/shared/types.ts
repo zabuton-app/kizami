@@ -1,5 +1,6 @@
 import type { AboutInfo } from './about'
 import { DEFAULT_THEME, type ThemeId } from './themes'
+import type { SecondaryTimeZone } from './timezones'
 
 export type Phase = 'work' | 'shortBreak' | 'longBreak'
 
@@ -40,6 +41,7 @@ export interface Settings {
   timeDisplay: TimeDisplayMode
   clockMode: boolean
   clockFormat: ClockFormat
+  secondaryTimeZone: SecondaryTimeZone
 }
 
 export const SETTINGS_LIMITS = {
@@ -63,7 +65,8 @@ export const DEFAULT_SETTINGS: Settings = {
   trayIcon: DEFAULT_TRAY_ICON,
   timeDisplay: DEFAULT_TIME_DISPLAY,
   clockMode: false,
-  clockFormat: DEFAULT_CLOCK_FORMAT
+  clockFormat: DEFAULT_CLOCK_FORMAT,
+  secondaryTimeZone: null
 }
 
 /** Design size of the popup window; the renderer scales down from this. */
