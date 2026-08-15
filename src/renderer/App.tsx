@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { clampShiftHours, SHIFT_RESET_MS } from '../shared/clock'
 import { detectLanguage } from '../shared/settings'
 import { DEFAULT_THEME, THEMES, type ThemeId } from '../shared/themes'
 import {
@@ -12,6 +13,7 @@ import {
   type TimerSnapshot,
   type UpdateStatus
 } from '../shared/types'
+import { accumulateWheelSteps } from '../shared/wheel-steps'
 import { TitleBar } from './components/TitleBar'
 import { ClockView } from './views/ClockView'
 import { MiniClockView } from './views/MiniClockView'
@@ -61,11 +63,72 @@ function applyThemeTokens(themeId: ThemeId): void {
   }
 }
 
+/**
+ * How far the clock display is moved from now, and what it takes to keep
+ * moving it. `hours` is always clamped; `remainder` is the sub-step distance
+ * the wheel accumulator carries between events; `nonce` counts inputs so the
+ * auto-return timer can restart on one that leaves `hours` alone — a scroll
+ * that only accumulates remainder, or one against the end of the range.
+ */
+export interface ShiftState {
+  readonly hours: number
+  readonly remainder: number
+  readonly nonce: number
+}
+
+/** What a clock view needs to show the shift and to change it. */
+export interface ClockShiftProps {
+  readonly shiftHours: number
+  readonly onWheelShift: (deltaY: number, deltaMode: number) => void
+  readonly onKeyShift: (direction: 1 | -1) => void
+}
+
+/**
+ * The clock showing the real current time. Reused rather than rebuilt so
+ * returning to it is reference-equal and React can skip the re-render.
+ */
+const NO_SHIFT: ShiftState = { hours: 0, remainder: 0, nonce: 0 }
+
+/**
+ * Next state after one wheel event. Written as a pure updater because
+ * StrictMode invokes `useState` updaters twice; deriving everything from the
+ * passed state keeps the second call identical to the first. `deltaY` is
+ * passed through untouched — `accumulateWheelSteps` owns the one sign
+ * inversion that makes an upward scroll move the clock forward.
+ */
+export function shiftByWheel(state: ShiftState, deltaY: number, deltaMode: number): ShiftState {
+  const { steps, remainder } = accumulateWheelSteps(state.remainder, deltaY, deltaMode)
+  return {
+    hours: clampShiftHours(state.hours + steps),
+    remainder,
+    nonce: state.nonce + 1
+  }
+}
+
+/**
+ * Next state after one keyboard step, the accessible equivalent of a notch.
+ * It drops the wheel remainder: the gesture the remainder belonged to is over,
+ * and carrying it would let a later half-notch scroll jump a whole hour.
+ */
+export function shiftByDirection(state: ShiftState, direction: 1 | -1): ShiftState {
+  return {
+    hours: clampShiftHours(state.hours + direction),
+    remainder: 0,
+    nonce: state.nonce + 1
+  }
+}
+
 export function App(): React.JSX.Element | null {
   const [snapshot, setSnapshot] = useState<TimerSnapshot | null>(null)
   const [settings, setSettings] = useState<Settings | null>(null)
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
   const [view, setView] = useState<View>('timer')
+  // Owned here rather than in a clock view so it survives the swap between the
+  // mini bar and the normal window: the main process only calls setSize(), so
+  // App is never remounted and the shift is carried across (3.7). It is also
+  // never written to settings and never crosses IPC, which is what makes a
+  // restart start unshifted and leaves the timer alone (3.9, 5.4, 5.5).
+  const [shift, setShift] = useState<ShiftState>(NO_SHIFT)
 
   useEffect(() => {
     void window.kizami.getSnapshot().then(setSnapshot)
@@ -101,6 +164,26 @@ export function App(): React.JSX.Element | null {
   useEffect(() => {
     applyThemeTokens(theme)
   }, [theme])
+
+  // A shifted clock returns to now on its own, so a tray-resident window is
+  // never left showing a time that is not the current one (5.1). The nonce is
+  // in the dependencies so any input restarts the wait, including one that
+  // leaves the hour where it was (5.2), while the once-a-second display tick
+  // lives in the views and cannot disturb it. Nothing is scheduled while the
+  // clock is already live, so scrolling back to zero ends the shift at once
+  // instead of after a leftover wait.
+  useEffect(() => {
+    if (shift.hours === 0) return
+    const id = window.setTimeout(() => setShift(NO_SHIFT), SHIFT_RESET_MS)
+    return () => window.clearTimeout(id)
+  }, [shift.hours, shift.nonce])
+
+  // Leaving clock mode discards the shift eagerly, so coming back shows the
+  // current time rather than a stale moment (5.3). Re-setting the same
+  // constant is reference-equal, so the common case bails out of re-rendering.
+  useEffect(() => {
+    if (!clockMode) setShift(NO_SHIFT)
+  }, [clockMode])
 
   // Mini mode has no settings entry point, so leaving it must always land on
   // the timer — even if miniMode was turned on while the settings view was
