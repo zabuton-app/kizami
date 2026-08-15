@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import type { ClockRowsInput } from '../../src/shared/clock'
 import {
+  buildClockRows,
   clampShiftHours,
   DAY_MS,
   formatClock,
@@ -322,6 +324,233 @@ describe('formatShiftLabel', () => {
   it('appends the unit it is given verbatim', () => {
     expect(formatShiftLabel(2, '時間')).toBe('+2時間')
     expect(formatShiftLabel(-2, ' hours')).toBe('-2 hours')
+  })
+})
+
+describe('buildClockRows', () => {
+  // One complete input with only the pieces a test cares about overridden, so
+  // the shape of ClockRowsInput is written out once.
+  const rowsInput = (overrides: Partial<ClockRowsInput> = {}): ClockRowsInput => ({
+    now: new Date('2026-08-15T03:04:05Z'),
+    shiftHours: 0,
+    format: 'hhmmss',
+    homeLabel: 'Home',
+    secondary: null,
+    ...overrides
+  })
+
+  // The zone's offset from UTC at an instant, read straight from Intl rather
+  // than through the module under test, so the offset assertion is independent.
+  const offsetMinutes = (zone: string, instant: Date): number => {
+    const name = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'longOffset' })
+      .formatToParts(instant)
+      .find((part) => part.type === 'timeZoneName')
+    const match = /GMT([+-])(\d{2}):(\d{2})/.exec(name?.value ?? '')
+    if (match === null) {
+      // Intl abbreviates a zero offset to a bare "GMT".
+      return 0
+    }
+    const magnitude = Number(match[2]) * 60 + Number(match[3])
+    return match[1] === '-' ? -magnitude : magnitude
+  }
+
+  const minutesOfDay = (time: string): number => {
+    const [hours, minutes] = time.split(':')
+    return Number(hours) * 60 + Number(minutes)
+  }
+
+  // Two wall clocks are only ever compared the short way round the dial.
+  const wrapMinutes = (value: number): number => ((((value + 720) % 1440) + 1440) % 1440) - 720
+
+  // Requirements 2.3 and 2.8: alone, the home row has nothing to be told apart
+  // from, so it carries no label and 007's single-row layout is unchanged.
+  it('returns one unlabeled row when no comparison zone is set', () => {
+    const rows = buildClockRows(rowsInput())
+    expect(rows).toHaveLength(1)
+    expect(rows[0].key).toBe('home')
+    expect(rows[0].label).toBeNull()
+  })
+
+  // Requirements 2.2 and 2.8: the comparison row comes second and both rows are
+  // labeled, so the user can tell which place each row represents.
+  it('returns two labeled rows in home-then-comparison order', () => {
+    const rows = buildClockRows(
+      rowsInput({ homeLabel: '自宅', secondary: { zone: 'Asia/Tokyo', label: '東京' } })
+    )
+    expect(rows).toHaveLength(2)
+    expect(rows.map((row) => row.key)).toEqual(['home', 'secondary'])
+    expect(rows.map((row) => row.label)).toEqual(['自宅', '東京'])
+  })
+
+  // Requirement 2.1: the home row is the local wall clock at the shifted
+  // instant, whatever zone the machine running this happens to be in.
+  it('derives the home row from the local wall clock', () => {
+    const now = new Date('2026-08-15T03:04:05Z')
+    for (const shiftHours of [-24, -3, 0, 3, 24]) {
+      const instant = shiftInstant(now, shiftHours)
+      const rows = buildClockRows(
+        rowsInput({ now, shiftHours, secondary: { zone: 'UTC', label: 'UTC' } })
+      )
+      expect(rows[0].time, `shift ${shiftHours}`).toBe(
+        formatClock(instant.getHours(), instant.getMinutes(), instant.getSeconds(), 'hhmmss')
+      )
+    }
+  })
+
+  // Requirement 2.7, by moving the zone underneath the module: Node re-reads
+  // process.env.TZ for every Date, so this is as close as a unit test gets to
+  // the operating system's zone changing while the clock is running.
+  it('follows a change to the operating system zone', () => {
+    const original = process.env.TZ
+    try {
+      const input = rowsInput({ secondary: { zone: 'Asia/Tokyo', label: 'Tokyo' } })
+      process.env.TZ = 'UTC'
+      expect(buildClockRows(input)[0].time).toBe('03:04:05')
+      process.env.TZ = 'America/New_York'
+      expect(buildClockRows(input)[0].time).toBe('23:04:05')
+      process.env.TZ = 'Asia/Kolkata'
+      expect(buildClockRows(input)[0].time).toBe('08:34:05')
+      // The comparison row goes through Intl with an explicit zone, so it is
+      // unmoved by any of this.
+      expect(buildClockRows(input)[1].time).toBe('12:04:05')
+    } finally {
+      if (original === undefined) {
+        delete process.env.TZ
+      } else {
+        process.env.TZ = original
+      }
+    }
+  })
+
+  // Requirement 3.2: both rows are derived from one shifted instant, so the gap
+  // between them is always the zones' real offset at that moment.
+  it('keeps both rows on one instant, a real zone offset apart', () => {
+    const now = new Date('2026-08-15T03:04:05Z')
+    const zones = ['UTC', 'Asia/Tokyo', 'America/New_York', 'Asia/Kolkata', 'Pacific/Auckland']
+    const differences = new Set<number>()
+    for (const zone of zones) {
+      for (const shiftHours of [-24, -5, 0, 5, 24]) {
+        const rows = buildClockRows(
+          rowsInput({ now, shiftHours, format: 'hhmm', secondary: { zone, label: zone } })
+        )
+        const instant = shiftInstant(now, shiftHours)
+        // getTimezoneOffset() is UTC minus local, so adding it removes the
+        // local offset and leaves the gap between the two zones.
+        const expected = wrapMinutes(offsetMinutes(zone, instant) + instant.getTimezoneOffset())
+        const actual = wrapMinutes(minutesOfDay(rows[1].time) - minutesOfDay(rows[0].time))
+        expect(actual, `${zone} at shift ${shiftHours}`).toBe(expected)
+        differences.add(actual)
+      }
+    }
+    // These five zones hold five distinct offsets, so at most one of them can
+    // match the machine's own: a run where every row pair agreed would mean the
+    // comparison row was not being converted at all.
+    expect([...differences].some((difference) => difference !== 0)).toBe(true)
+  })
+
+  // Requirement 2.4: one format choice covers both rows.
+  it('renders every row in the selected clock format', () => {
+    const base = rowsInput({ secondary: { zone: 'Asia/Tokyo', label: 'Tokyo' } })
+    const short = buildClockRows({ ...base, format: 'hhmm' })
+    const long = buildClockRows({ ...base, format: 'hhmmss' })
+    for (const row of short) {
+      expect(row.time).toMatch(/^\d{2}:\d{2}$/)
+    }
+    for (const row of long) {
+      expect(row.time).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+    }
+    expect(long.map((row) => row.time.slice(0, 5))).toEqual(short.map((row) => row.time))
+    expect(long[1].time).toBe('12:04:05')
+    expect(short[1].time).toBe('12:04')
+    // The lone home row honours the choice too.
+    expect(buildClockRows({ ...base, secondary: null, format: 'hhmm' })[0].time).toMatch(
+      /^\d{2}:\d{2}$/
+    )
+  })
+
+  // Requirement 3.2 with the shift crossing a date boundary: the comparison row
+  // lands on the next day rather than wrapping within the same one.
+  it('shifts across a date boundary', () => {
+    const rows = buildClockRows(
+      rowsInput({
+        now: new Date('2026-08-15T20:34:56Z'),
+        shiftHours: 8,
+        secondary: { zone: 'Asia/Tokyo', label: 'Tokyo' }
+      })
+    )
+    // 20:34:56Z plus 8h is 04:34:56Z the next day, which is 13:34:56 in Tokyo.
+    expect(rows[1].time).toBe('13:34:56')
+  })
+
+  // Requirement 3.5: the shift moves whole hours only, so the real minutes and
+  // seconds stay on the display and keep advancing as time passes.
+  it('keeps the minutes and seconds of the instant it is given', () => {
+    for (const shiftHours of [-24, -7, -1, 0, 1, 7, 24]) {
+      const rows = buildClockRows(
+        rowsInput({ shiftHours, secondary: { zone: 'Asia/Tokyo', label: 'Tokyo' } })
+      )
+      expect(rows[1].time.slice(3), `shift ${shiftHours}`).toBe('04:05')
+    }
+    const ticked = buildClockRows(
+      rowsInput({
+        now: new Date('2026-08-15T03:04:06Z'),
+        shiftHours: 5,
+        secondary: { zone: 'Asia/Tokyo', label: 'Tokyo' }
+      })
+    )
+    expect(ticked[1].time.slice(3)).toBe('04:06')
+  })
+
+  // Requirement 6.4: the caller supplies the instant, so the builder reads no
+  // clock of its own. An instant decades from now has to survive intact, which
+  // a hidden `new Date()` anywhere in the builder would break.
+  it('renders the instant it is given rather than the current time', () => {
+    const rows = buildClockRows(
+      rowsInput({
+        now: new Date('2000-01-01T00:00:00Z'),
+        shiftHours: 3,
+        secondary: { zone: 'UTC', label: 'UTC' }
+      })
+    )
+    expect(rows[1].time).toBe('03:00:00')
+  })
+
+  it('does not mutate the instant it is given', () => {
+    const now = new Date('2026-08-15T03:04:05.678Z')
+    buildClockRows(
+      rowsInput({ now, shiftHours: 6, secondary: { zone: 'Asia/Tokyo', label: 'Tokyo' } })
+    )
+    expect(now.toISOString()).toBe('2026-08-15T03:04:05.678Z')
+  })
+
+  // The per-zone formatter cache is what keeps a once-a-second tick cheap.
+  // Without this, deleting the cache lookup would leave the suite green.
+  // Africa/Cairo is used nowhere else in this file, so the count is exact.
+  it('builds one formatter per comparison zone across ticks', () => {
+    const real = Intl.DateTimeFormat
+    let constructions = 0
+    // A Proxy rather than a spy: Intl.DateTimeFormat has to stay constructible
+    // and keep its statics, and a plain mock returns an object without any of
+    // the formatting methods the module then calls.
+    Intl.DateTimeFormat = new Proxy(real, {
+      construct(target, args, newTarget) {
+        constructions += 1
+        return Reflect.construct(target, args, newTarget)
+      }
+    })
+    try {
+      for (let second = 0; second < 5; second += 1) {
+        buildClockRows(
+          rowsInput({
+            now: new Date(Date.UTC(2026, 7, 15, 3, 4, second)),
+            secondary: { zone: 'Africa/Cairo', label: 'Cairo' }
+          })
+        )
+      }
+      expect(constructions).toBe(1)
+    } finally {
+      Intl.DateTimeFormat = real
+    }
   })
 })
 

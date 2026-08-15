@@ -153,6 +153,56 @@ export function clampShiftHours(value: number): number {
   return whole === 0 ? 0 : whole
 }
 
+/** One line of the clock display: a time, and the place it belongs to. */
+export interface ClockRow {
+  readonly key: 'home' | 'secondary'
+  /** Null only when the home row is shown alone (2.3, 2.8). */
+  readonly label: string | null
+  readonly time: string
+}
+
+export interface ClockRowsInput {
+  readonly now: Date
+  readonly shiftHours: number
+  readonly format: ClockFormat
+  readonly homeLabel: string
+  readonly secondary: { readonly zone: string; readonly label: string } | null
+}
+
+/**
+ * The rows the clock shows for one instant and one shift. Both rows are derived
+ * from the same shifted instant, which is what makes the gap between them the
+ * zones' real offset at that moment (3.2). The home row reads the local `Date`
+ * getters, so a change to the operating system's zone is picked up on the next
+ * tick without this module knowing about it (2.7); only the comparison row goes
+ * through `Intl` (2.5). `now` comes from the caller, so nothing here reads a
+ * clock of its own and every value is re-derived per tick (6.4).
+ */
+export function buildClockRows(input: ClockRowsInput): readonly ClockRow[] {
+  const instant = shiftInstant(input.now, input.shiftHours)
+  const homeTime = formatClock(
+    instant.getHours(),
+    instant.getMinutes(),
+    instant.getSeconds(),
+    input.format
+  )
+  if (input.secondary === null) {
+    // Alone, the home row has nothing to be told apart from, so it stays
+    // unlabeled and 007's single-row display is unchanged (2.3, 2.8).
+    return [{ key: 'home', label: null, time: homeTime }]
+  }
+  const parts = zonedClockParts(instant, input.secondary.zone)
+  return [
+    { key: 'home', label: input.homeLabel, time: homeTime },
+    {
+      key: 'secondary',
+      label: input.secondary.label,
+      // The same formatter as the home row, so one format choice covers both (2.4).
+      time: formatClock(parts.hours, parts.minutes, parts.seconds, input.format)
+    }
+  ]
+}
+
 /**
  * The shift indication, such as `+8h`. Empty when the clock is showing now,
  * where there is nothing to warn about. The hour unit is passed in, like
