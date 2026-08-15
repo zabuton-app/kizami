@@ -357,6 +357,82 @@ body {
   transform: translateY(-2px);
 }
 
+/* Clock mode's clock area: the wheel and keyboard surface, and the anchor for
+   the shifted treatment. It opts out of the drag region the same way
+   .mini-bar__toggle already does — a dragged region never delivers wheel
+   events to the DOM — while the bar around it stays draggable (3.6). */
+.mini-bar__clock {
+  display: flex;
+  /* Bottom-aligned so the times line up across the cells however tall the
+     label lines above them turn out to be. */
+  align-items: flex-end;
+  gap: 10px;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+.mini-bar__clock:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* One zone, stacked: a label line over the time. Stacking is what lets a
+   second zone cost only its own width rather than a label beside a time,
+   which is the difference between fitting the 380px bar and not (2.6). */
+.mini-bar__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mini-bar__cell-label {
+  font-weight: 700;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+/* The shift amount rides the home cell's label line (`Home +8h`) instead of
+   taking an element of its own: the bar has no width to spare for a badge,
+   and the label line is already paid for (4.4). */
+.mini-bar__shift {
+  margin-left: 4px;
+  color: var(--badge);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Unshifted, the indication stays in the document so its live region remains
+   registered. Dropping the margin leaves an empty inline that generates no
+   line box, so the label line collapses to nothing and the unset-zone bar is
+   pixel-identical to 007's (4.3). */
+.mini-bar__shift:empty {
+  margin-left: 0;
+}
+
+/* Two zones: the clock is sized down so both cells, the date, the blocks and
+   the expand button all fit the bar's fixed width. Only here, which is what
+   leaves the unset-zone bar on 007's 24px clock. */
+.mini-bar__clock--pair .mini-bar__time {
+  font-size: 18px;
+  letter-spacing: 0;
+  /* The 24px clock is nudged up to meet the phase dot beside it; at this size
+     the cell centres it instead, so the nudge would only unbalance it. */
+  transform: none;
+}
+
+/* Shifted cells read as "not now" before the amount is read at all (4.2,
+   4.4). Same visual language as the normal window's rows, tightened to the
+   bar: the tint is a spread shadow and the ring an outline, so neither takes
+   any space and nothing moves when the shift starts. */
+.mini-bar__clock--shifted {
+  border-radius: 6px;
+  background: var(--empty);
+  box-shadow: 0 0 0 3px var(--empty);
+  outline: 2px dashed var(--badge);
+  outline-offset: 3px;
+}
+
 /* Takes the width left over by the fixed-size controls, and is the only part
    of the bar allowed to shrink — so the buttons never get pushed outside. */
 .mini-bar__blocks {

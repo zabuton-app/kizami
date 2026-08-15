@@ -243,6 +243,13 @@ export function App(): React.JSX.Element | null {
           <MiniClockView
             clockFormat={clockFormat}
             language={language}
+            secondaryTimeZone={secondaryTimeZone}
+            shift={{
+              shiftHours: shift.hours,
+              onWheelShift: (deltaY, deltaMode) =>
+                setShift((s) => shiftByWheel(s, deltaY, deltaMode)),
+              onKeyShift: (direction) => setShift((s) => shiftByDirection(s, direction))
+            }}
             onExitMini={() =>
               void window.kizami.updateSettings({ miniMode: false }).then(setSettings)
             }
