@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { clampShiftHours, SHIFT_RESET_MS } from '../shared/clock'
 import { detectLanguage } from '../shared/settings'
 import { DEFAULT_THEME, THEMES, type ThemeId } from '../shared/themes'
+import type { SecondaryTimeZone } from '../shared/timezones'
 import {
   DEFAULT_CLOCK_FORMAT,
   DEFAULT_SETTINGS,
@@ -161,6 +162,9 @@ export function App(): React.JSX.Element | null {
 
   const clockFormat: ClockFormat = settings?.clockFormat ?? DEFAULT_CLOCK_FORMAT
 
+  const secondaryTimeZone: SecondaryTimeZone =
+    settings?.secondaryTimeZone ?? DEFAULT_SETTINGS.secondaryTimeZone
+
   useEffect(() => {
     applyThemeTokens(theme)
   }, [theme])
@@ -291,6 +295,13 @@ export function App(): React.JSX.Element | null {
                 theme={theme}
                 sessionsPerCycle={sessionsPerCycle}
                 clockFormat={clockFormat}
+                secondaryTimeZone={secondaryTimeZone}
+                shift={{
+                  shiftHours: shift.hours,
+                  onWheelShift: (deltaY, deltaMode) =>
+                    setShift((s) => shiftByWheel(s, deltaY, deltaMode)),
+                  onKeyShift: (direction) => setShift((s) => shiftByDirection(s, direction))
+                }}
                 onSelectTheme={(next) =>
                   void window.kizami.updateSettings({ theme: next }).then(setSettings)
                 }

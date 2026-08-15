@@ -194,6 +194,18 @@ body {
   gap: 16px;
 }
 
+/* Clock mode's card is also its input surface: it takes focus, wheel events
+   and the arrow keys, and it anchors the shift badge. Kept a modifier so the
+   timer's card is untouched by any of it. */
+.timer__card--clock {
+  position: relative;
+}
+
+.timer__card--clock:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
 .timer__time {
   font-weight: 900;
   font-size: 64px;
@@ -203,6 +215,75 @@ body {
      so a ticking readout would sway sideways every second without fixed-
      width digits. Shared by the countdown and clock mode's time of day. */
   font-variant-numeric: tabular-nums;
+}
+
+/* One row: a bare column holding the single .timer__time, so the unset-zone
+   clock keeps spec 007's metrics exactly. */
+.timer__rows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Two rows: a two-column grid over the labels and the times, so the times
+   line up under each other however wide the city names are. Both rows are
+   sized down here — at 64px they would not fit the card together — and only
+   here, which is what leaves the single-row case alone. */
+.timer__rows--pair {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.timer__rows--pair .timer__time {
+  font-size: 40px;
+}
+
+.timer__row-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--sub);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Shifted rows read as "not now" before the badge is read at all (4.2). The
+   tint is drawn as a spread shadow and the dashed ring as an outline, so
+   neither takes any space and the rows do not jump when the shift starts.
+   The row text keeps --ink: recolouring 40px digits in an accent token costs
+   legibility on the lighter themes. */
+.timer__rows--shifted {
+  border-radius: 8px;
+  background: var(--empty);
+  box-shadow: 0 0 0 6px var(--empty);
+  outline: 2px dashed var(--badge);
+  outline-offset: 6px;
+}
+
+/* The shift amount, pinned to the card's corner so showing it never moves the
+   clock. Filled like .timer__session, but drawing its text in --card rather
+   than white so it stays legible on the dark theme's badge too. */
+.timer__shift {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-weight: 900;
+  font-size: 11px;
+  color: var(--card);
+  background: var(--badge);
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Unshifted, the badge is still in the document so its live region stays
+   registered; strip everything that would draw a bare pill (4.3). */
+.timer__shift:empty {
+  padding: 0;
+  background: none;
 }
 
 .timer__blocks {
