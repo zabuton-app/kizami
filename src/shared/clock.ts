@@ -58,3 +58,110 @@ export function formatClockDate(
     ? `${month}/${day}（${weekdayLabel}）`
     : `${weekdayLabel} ${month}/${day}`
 }
+
+/** Furthest the displayed time may be shifted from now, in hours either way. */
+export const SHIFT_HOURS_LIMIT = 24
+
+/** Idle period after the last shift input before the display returns to now. */
+export const SHIFT_RESET_MS = 10_000
+
+const HOUR_MS = 3_600_000
+
+/** A time of day as numbers, in the shape `formatClock` already takes. */
+export interface ClockParts {
+  readonly hours: number
+  readonly minutes: number
+  readonly seconds: number
+}
+
+/**
+ * One formatter per zone. Building an `Intl.DateTimeFormat` is the expensive
+ * part of the conversion and the clock re-derives every row once a second, so
+ * formatters are built on first use and kept for the life of the process.
+ * There is at most one comparison zone at a time, so the map stays tiny.
+ */
+const zoneFormatters = new Map<string, Intl.DateTimeFormat>()
+
+function zoneFormatter(zone: string): Intl.DateTimeFormat {
+  const cached = zoneFormatters.get(zone)
+  if (cached !== undefined) {
+    return cached
+  }
+  // `h23` is deliberate: other hour cycles report midnight as 24, which would
+  // render as `24:07` for an hour every night. `en-US` pins latin digits so
+  // the parts parse back to numbers.
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    hourCycle: 'h23',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+  zoneFormatters.set(zone, formatter)
+  return formatter
+}
+
+function partValue(parts: readonly Intl.DateTimeFormatPart[], type: string): number {
+  const part = parts.find((candidate) => candidate.type === type)
+  return part === undefined ? 0 : Number(part.value)
+}
+
+/**
+ * The wall-clock time an instant shows in `zone`. The offset actually in
+ * effect at that instant is applied, so daylight-saving transitions are
+ * resolved by the platform's timezone data rather than by arithmetic here.
+ * `zone` is expected to be a resolvable IANA id; the curated catalog is the
+ * only source of one.
+ */
+export function zonedClockParts(instant: Date, zone: string): ClockParts {
+  const parts = zoneFormatter(zone).formatToParts(instant)
+  return {
+    hours: partValue(parts, 'hour'),
+    minutes: partValue(parts, 'minute'),
+    seconds: partValue(parts, 'second')
+  }
+}
+
+/**
+ * The instant the clock should display: `now` moved by whole hours. Shifting
+ * the instant rather than the rendered hour is what keeps every row on the
+ * same moment, and leaves the real minutes and seconds ticking on the display.
+ */
+export function shiftInstant(now: Date, shiftHours: number): Date {
+  return new Date(now.getTime() + shiftHours * HOUR_MS)
+}
+
+/**
+ * Confine a shift to whole hours within a day either side of now. Saturating
+ * rather than wrapping is what makes an input past the end a no-op, and
+ * truncating a stray fraction can only ever shrink the shift.
+ */
+export function clampShiftHours(value: number): number {
+  const whole = Math.trunc(value)
+  if (Number.isNaN(whole)) {
+    // Nothing to saturate towards, so read a broken input as "not shifted".
+    return 0
+  }
+  if (whole >= SHIFT_HOURS_LIMIT) {
+    return SHIFT_HOURS_LIMIT
+  }
+  if (whole <= -SHIFT_HOURS_LIMIT) {
+    return -SHIFT_HOURS_LIMIT
+  }
+  // `Math.trunc` yields -0 for a small negative; collapse it so an unshifted
+  // clock has a single representation.
+  return whole === 0 ? 0 : whole
+}
+
+/**
+ * The shift indication, such as `+8h`. Empty when the clock is showing now,
+ * where there is nothing to warn about. The hour unit is passed in, like
+ * `formatClockDate`'s weekday label, keeping message lookup out of here.
+ */
+export function formatShiftLabel(shiftHours: number, hourUnit: string): string {
+  if (shiftHours === 0) {
+    return ''
+  }
+  const sign = shiftHours > 0 ? '+' : '-'
+  return `${sign}${Math.abs(shiftHours)}${hourUnit}`
+}
