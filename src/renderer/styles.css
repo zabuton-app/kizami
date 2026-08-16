@@ -201,38 +201,21 @@ body {
   position: relative;
 }
 
-/* The card already carries a 3px --ink border, so any ring drawn around it
-   lands concentric with that border and reads as the card's edge having
-   doubled rather than as focus. Recolour the border the card already has
-   instead: the edge stays a single line and nothing moves, since the width is
-   untouched.
-
-   --badge rather than --primary because it is the token that differs from
-   --ink in every theme — on nightPudding --ink is a cream and --primary a
-   gold, close enough that the focused state barely read. It also matches the
-   shifted rows' ring, so the accent consistently means "this clock is the one
-   you are working". The mini bar needs none of this: its clock area has no
-   border of its own, so its ring sits well inside the bar's edge. */
+/* The card is deliberately unchanged by focus: its border and its shadow keep
+   one colour in every state, and a ring is not an option either — drawn around
+   the card it lands concentric with the 3px --ink border and reads as that
+   edge having doubled, which is the defect this replaced. The rule exists only
+   to suppress the browser's own ring, which would be exactly that concentric
+   line. The keyboard still shifts the clock; nothing marks where focus is. */
 .timer__card--clock:focus-visible {
   outline: none;
-  border-color: var(--badge);
-  /* The border alone is not enough everywhere: on nightPudding --ink is a
-     cream and --badge a pink, only 1.79:1 apart, so the state barely reads and
-     falls short of the 3:1 WCAG asks of a focus indicator. Swing the card's
-     hard shadow too. It sits 6px off to one side rather than around the card,
-     so it cannot look like a doubled edge, and it costs no space either. */
-  box-shadow: 6px 6px 0 var(--badge);
-  /* The card carries a 0.3s border transition for theme switching, which is
-     far too slow for focus: tabbing through would move on before the
-     indicator finished appearing. */
-  transition-duration: 0.1s;
 }
 
-/* Forced colours (Windows high contrast) overwrite border-color and drop
-   box-shadow entirely, so both signals above vanish and the focused card
-   becomes pixel-identical to the unfocused one. An outline survives, so give
-   the ring back here — a doubled edge is a far smaller problem than no
-   indicator at all, and the offset keeps the two lines apart. */
+/* Forced colours (Windows high contrast) is the one mode where the ring earns
+   its place: it is turned on by people who need a strong indicator, and it
+   renders nothing of the design above anyway — the card's colours are
+   overwritten wholesale there, so a doubled edge is not a cost that mode can
+   even pay. This block cannot affect the normal palette. */
 @media (forced-colors: active) {
   .timer__card--clock:focus-visible {
     outline: 3px solid Highlight;
