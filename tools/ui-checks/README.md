@@ -145,6 +145,122 @@ announcing the ticking clock text — and names the case and requirement that
 must catch it. A fault that goes unnoticed exits non-zero, so the check
 cannot quietly stop checking.
 
+## clock-mode-intact
+
+Guards what clock mode already did, now that it has a second row and a
+shiftable display. Every case is a "nothing else moved" assertion: with no
+comparison zone the clock is still one bare row, the pomodoro timer keeps its
+own schedule across scrolling and across the automatic return, scrolling
+outside clock mode does nothing, the shift is dropped on leaving clock mode and
+on a restart, and the clock, the day-progress blocks and the mini bar's date
+are all right the moment the window comes back (requirements 2.3, 3.9, 3.10,
+5.3, 5.4, 5.5, 6.1, 6.2 and 6.4, and through them 007's FR-005, FR-006 and
+FR-007).
+
+```bash
+node tools/ui-checks/clock-mode-intact.mjs
+
+# One line per case, with the times, block counts and dates that were read
+node tools/ui-checks/clock-mode-intact.mjs --verbose
+
+# Break the app twelve ways and confirm each assertion still catches it
+node tools/ui-checks/clock-mode-intact.mjs --self-check
+node tools/ui-checks/clock-mode-intact.mjs --self-check=stale-clock
+```
+
+Nine cases in about 90 seconds, most of it spent waiting out the ten-second
+return, the two twelve-second stalls and the window's own mini-mode
+transitions; the self-check takes about 135 seconds, because it launches a
+fresh instance per fault but runs only the cases that fault claims to break.
+Measured on Linux/X11: seven consecutive green runs, five on a desktop
+display (88-89s) and two under `xvfb-run -a` (91-92s), against an unmodified
+build.
+
+Every form switch hands control back only once the window's transition is
+over, which is why a run costs more than the assertions themselves do.
+`applyMiniMode` in `src/main/popup-window.ts` reads the renderer's viewport
+back one second after the switch and corrects a stale one, and that correction
+is abandoned the moment the window is not visible. A case that hid the window
+sooner than that — `hide-and-show` used to hide it about 500ms after the
+switch — cancelled the app's only recovery from a resize the compositor
+dropped, and a renderer left laid out for the mini height never draws the
+normal window again. The wait is derived from the main process's own settle
+constants rather than guessed.
+
+| Case                | Requirements | What it drives                                       |
+| ------------------- | ------------ | ---------------------------------------------------- |
+| `single-row`        | 2.3          | No zone set, both formats, both window forms         |
+| `scroll-isolation`  | 3.9          | Four notches on each surface, timer read either side |
+| `phase-advance`     | 3.9          | A phase boundary reached under continuous scrolling  |
+| `return-isolation`  | 5.5          | The ten-second expiry, timer read either side        |
+| `timer-mode-scroll` | 3.10         | Scrolling the timer card and the mini timer bar      |
+| `leave-clock-mode`  | 5.3          | Out of clock mode and back with a shift held         |
+| `restart`           | 5.4          | A second process on the first one's profile          |
+| `shifted-anchors`   | 6.1, 6.2     | Shifted over midnight, forward and backward          |
+| `hide-and-show`     | 6.4          | Hidden, the renderer starved, then brought back      |
+
+The timer is only ever observed through `getSnapshot()`, which reports the main
+process's own state, so the renderer cannot flatter it: a case scrolls, reads
+the snapshot either side, and requires every field to be identical except the
+remaining time, which must have fallen by exactly the wall time that passed.
+Nothing else is read back from the app either — times, block counts and date
+strings are re-derived here from the wall clock, the zone id and the
+dictionary, so a display that agrees with itself but not with the world still
+fails.
+
+`phase-advance` is the one case that reaches into the main process. It launches
+an instance armed twelve seconds before its first phase boundary through the
+dev-only elapsed-time seam, wraps `Notification.prototype.show` so every
+desktop notification is recorded, and then scrolls the clock continuously until
+the phase runs out. The phase change and the notification it fires are both
+required to land within a window derived from the armed snapshot, which is
+3.9's "notification schedule" observed directly rather than inferred. Where a
+platform reports no notification support the case says so and rests on the
+phase change alone.
+
+`hide-and-show` is what 6.4 needs and the harness cannot do on its own. The
+window is hidden through `hideWindow()`, the renderer's main thread is then
+held for twelve seconds — hiding alone does not throttle it on this platform,
+so the stall is what actually creates the condition — and the window is brought
+back the way a user does it: a second launch on the same profile loses the
+single-instance lock and quits, and the running instance answers with
+`showPopupNear()`. The count of snapshots the page received is the witness that
+the window really went away, so a hide that silently did nothing cannot pass.
+
+Two cases bring up instances of their own, and a third has to know where the
+shared instance keeps its settings — none of which `launchApp()` offers, since
+it mints a throwaway profile per launch and hands back only the page.
+`restart` relaunches a second process on the first one's profile,
+`phase-advance` needs the main-process handle, and `hide-and-show` passes the
+shared profile's path to the second launch that brings the window back. That
+path is found by diffing the temp directory around a launch, and the run
+refuses to continue if it is ever ambiguous — so nothing else may be launching
+the app at the same time. Every profile this check creates is removed when its
+instance closes, which the shared harness does not do.
+
+The numbers below are what the check reported when it was written, recorded as
+a baseline rather than asserted.
+
+| Measurement                               | Observed       | Budget or wait |
+| ----------------------------------------- | -------------- | -------------- |
+| Phase change after its boundary           | 115-173ms      | 3500ms         |
+| Notification against that boundary        | 65-2ms early   | 3500ms late    |
+| Scroll steps landed while a phase ran out | 41-49 of 41-49 | not asserted   |
+| Automatic return after the last input     | 10007ms        | 10000ms        |
+| Window hidden with the renderer stalled   | 13.3s          | not asserted   |
+| Renderer ticks during that stall          | 1-3 of 13      | not asserted   |
+
+Each self-check fault sabotages the app — labelling the lone row, letting the
+empty shift indication take space, skipping or pausing the timer on a scroll,
+pausing it on the automatic return, swallowing the phase-change notification,
+entering clock mode on a scroll in timer mode, carrying the shift back into
+clock mode, restoring it after a restart, freezing the clock at the moment the
+renderer was starved, moving the date with the shifted rows, dropping a
+day-progress block while shifted — and names the case and requirement that must
+catch it. Eleven of them break the page; `silent-transition` breaks the main
+process, because a notification never reaches the page at all. A fault that
+goes unnoticed exits non-zero, so the check cannot quietly stop checking.
+
 ## Notes
 
 - Checks run at `--force-device-scale-factor=1`, so a CSS pixel is a device
