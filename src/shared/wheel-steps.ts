@@ -65,20 +65,33 @@ export function accumulateWheelSteps(
   }
 
   const movement = -deltaY * deltaScale(deltaMode)
-  // A reversal starts fresh: keeping the old remainder would make the user
+  // An event already worth a whole step is a wheel detent — a complete gesture
+  // in itself, not a fragment being assembled. It therefore neither inherits a
+  // carry nor leaves one, so one notch is always the same number of hours no
+  // matter what a hi-res wheel or a trackpad left behind. Letting a notch keep
+  // its own leftover would bank a residue on every one of them, and a platform
+  // reporting 133px per notch would reach a second hour on the fourth.
+  //
+  // This is about detents, not about devices: a trackpad's sub-threshold stream
+  // still accumulates, which is what turns it into a step, but a momentum delta
+  // large enough to be a step on its own is treated as a detent like any other.
+  //
+  // It also makes an overflowing delta safe: scaling an absurd deltaY can reach
+  // infinity, and anything that large is necessarily a detent, so no meaningless
+  // leftover can escape.
+  const detent = Math.abs(movement) >= WHEEL_STEP_PX
+  // A reversal starts fresh too: keeping the old remainder would make the user
   // scroll off their previous progress before the clock moved the other way.
   // The product is negative only when both are non-zero with opposite signs,
   // so a zero delta leaves the gesture alone.
   const reversed = movement * remainder < 0
-  const total = (reversed ? 0 : remainder) + movement
+  const total = detent || reversed ? movement : remainder + movement
 
   // Excess steps beyond the cap are discarded, not banked, so a fling moves by
   // the cap and no further.
   const whole = Math.trunc(total / WHEEL_STEP_PX)
   const steps = Math.min(WHEEL_MAX_STEPS_PER_EVENT, Math.max(-WHEEL_MAX_STEPS_PER_EVENT, whole))
-  // Scaling an absurd delta can overflow to infinity, where there is no
-  // meaningful leftover to keep.
-  const rest = Number.isFinite(total) ? total % WHEEL_STEP_PX : 0
+  const rest = detent ? 0 : total % WHEEL_STEP_PX
 
   return { steps: collapseZero(steps), remainder: collapseZero(rest) }
 }

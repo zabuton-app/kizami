@@ -74,10 +74,40 @@ describe('accumulateWheelSteps with a mouse wheel', () => {
     expect(accumulateWheelSteps(0, notch, PIXEL_MODE).steps).toBe(-1)
   })
 
-  it('turns a run of notches into one step each', () => {
-    const { steps, total } = feed([-114, -114, -114, -114])
-    expect(steps).toEqual([1, 1, 1, 1])
-    expect(total).toBe(4)
+  // A run has to stay honest for longer than the first few notches. A notch
+  // that is not a whole multiple of the threshold leaves a residue, and if that
+  // residue were carried it would push a later notch to two hours: the eighth
+  // at 114px, the fifth at 120px, the fourth at 133px.
+  it.each([100, 114, 120, 125, 133])('keeps a run of %ipx notches at one step each', (notch) => {
+    const run = Array.from({ length: 8 }, () => -notch)
+    const { steps, total } = feed(run)
+    expect(steps).toEqual([1, 1, 1, 1, 1, 1, 1, 1])
+    expect(total).toBe(8)
+  })
+
+  // The run above only catches a width whose residue happens to accumulate
+  // within eight notches — 105px would need twenty. Sweeping the widths instead
+  // of listing them keeps the guarantee from depending on how long the test is.
+  it('holds every notch width to the same steps however long the run', () => {
+    for (let notch = WHEEL_STEP_PX; notch <= 400; notch += 1) {
+      const expected = Math.min(WHEEL_MAX_STEPS_PER_EVENT, Math.trunc(notch / WHEEL_STEP_PX))
+      const { steps } = feed(Array.from({ length: 30 }, () => -notch))
+      expect(new Set(steps), `${notch}px`).toEqual(new Set([expected]))
+    }
+  })
+
+  it('leaves no residue behind a notch, so the next one starts clean', () => {
+    expect(accumulateWheelSteps(0, -133, PIXEL_MODE).remainder).toBe(0)
+    expect(accumulateWheelSteps(0, 133, PIXEL_MODE).remainder).toBe(0)
+  })
+
+  // A notch is a whole gesture, so it ignores whatever a hi-res wheel or a
+  // trackpad had accumulated. Without this, 90px of carry would turn the next
+  // 133px notch into two hours — the same drift, reached by mixing devices
+  // rather than by repeating notches.
+  it('ignores an accumulated carry rather than adding a notch to it', () => {
+    expect(accumulateWheelSteps(90, -133, PIXEL_MODE)).toEqual({ steps: 1, remainder: 0 })
+    expect(accumulateWheelSteps(-90, 133, PIXEL_MODE)).toEqual({ steps: -1, remainder: 0 })
   })
 })
 
