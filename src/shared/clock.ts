@@ -132,24 +132,31 @@ export function shiftInstant(now: Date, shiftHours: number): Date {
 }
 
 /**
- * Confine a shift to whole hours within a day either side of now. Saturating
- * rather than wrapping is what makes an input past the end a no-op, and
- * truncating a stray fraction can only ever shrink the shift.
+ * Positions a shift cycles through in one direction: every hour out to the
+ * limit, and then zero. Zero sits one step past the far end, which is what
+ * makes scrolling wrap instead of stop.
  */
-export function clampShiftHours(value: number): number {
-  const whole = Math.trunc(value)
-  if (Number.isNaN(whole)) {
-    // Nothing to saturate towards, so read a broken input as "not shifted".
+const SHIFT_CYCLE = SHIFT_HOURS_LIMIT + 1
+
+/**
+ * Confine a shift to whole hours within a day either side of now, wrapping
+ * back to zero one step past either end rather than stopping there — a user
+ * who keeps scrolling one way should keep getting a response instead of
+ * hitting a wall. Truncating a stray fraction can only ever shrink the shift.
+ *
+ * `%` keeps the sign of its left operand, so a shift running forward wraps
+ * `+25` to zero and a shift running backward wraps `-25` to zero, each staying
+ * on its own side rather than jumping across to the other end.
+ */
+export function wrapShiftHours(value: number): number {
+  if (!Number.isFinite(value)) {
+    // There is no position a day away from an unrepresentable one, so read a
+    // broken input as "not shifted" rather than inventing an end to land on.
     return 0
   }
-  if (whole >= SHIFT_HOURS_LIMIT) {
-    return SHIFT_HOURS_LIMIT
-  }
-  if (whole <= -SHIFT_HOURS_LIMIT) {
-    return -SHIFT_HOURS_LIMIT
-  }
-  // `Math.trunc` yields -0 for a small negative; collapse it so an unshifted
-  // clock has a single representation.
+  const whole = Math.trunc(value) % SHIFT_CYCLE
+  // `Math.trunc` and `%` both yield -0 for a small negative; collapse it so an
+  // unshifted clock has a single representation.
   return whole === 0 ? 0 : whole
 }
 

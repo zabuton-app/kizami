@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { ClockRowsInput } from '../../src/shared/clock'
 import {
   buildClockRows,
-  clampShiftHours,
   DAY_MS,
   formatClock,
   formatClockDate,
@@ -12,6 +11,7 @@ import {
   SHIFT_RESET_MS,
   shiftInstant,
   WEEKDAY_KEYS,
+  wrapShiftHours,
   zonedClockParts
 } from '../../src/shared/clock'
 import { filledBlocks } from '../../src/shared/timer-logic'
@@ -263,40 +263,68 @@ describe('shiftInstant', () => {
   })
 })
 
-describe('clampShiftHours', () => {
+describe('wrapShiftHours', () => {
   it('leaves values inside the range untouched', () => {
-    expect(clampShiftHours(0)).toBe(0)
-    expect(clampShiftHours(8)).toBe(8)
-    expect(clampShiftHours(-3)).toBe(-3)
+    expect(wrapShiftHours(0)).toBe(0)
+    expect(wrapShiftHours(8)).toBe(8)
+    expect(wrapShiftHours(-3)).toBe(-3)
   })
 
   it('keeps both ends of the range (requirement 3.3)', () => {
-    expect(clampShiftHours(SHIFT_HOURS_LIMIT)).toBe(24)
-    expect(clampShiftHours(-SHIFT_HOURS_LIMIT)).toBe(-24)
+    expect(wrapShiftHours(SHIFT_HOURS_LIMIT)).toBe(24)
+    expect(wrapShiftHours(-SHIFT_HOURS_LIMIT)).toBe(-24)
   })
 
-  // Requirement 3.4: scrolling past the end leaves the display unchanged, which
-  // only holds if the clamp saturates instead of wrapping.
-  it('saturates beyond both ends', () => {
-    expect(clampShiftHours(25)).toBe(24)
-    expect(clampShiftHours(1000)).toBe(24)
-    expect(clampShiftHours(-25)).toBe(-24)
-    expect(clampShiftHours(-1000)).toBe(-24)
+  // Requirement 3.4: one step past either end lands back on zero, so scrolling
+  // one way keeps having an effect instead of stopping at a wall.
+  it('wraps to zero one step past either end', () => {
+    expect(wrapShiftHours(SHIFT_HOURS_LIMIT + 1)).toBe(0)
+    expect(wrapShiftHours(-SHIFT_HOURS_LIMIT - 1)).toBe(0)
+  })
+
+  it('carries on past the wrap without changing side', () => {
+    expect(wrapShiftHours(SHIFT_HOURS_LIMIT + 2)).toBe(1)
+    expect(wrapShiftHours(SHIFT_HOURS_LIMIT + 3)).toBe(2)
+    expect(wrapShiftHours(-SHIFT_HOURS_LIMIT - 2)).toBe(-1)
+    expect(wrapShiftHours(-SHIFT_HOURS_LIMIT - 3)).toBe(-2)
+  })
+
+  // Walking a full cycle one hour at a time is the property the user asked for:
+  // scrolling one direction forever visits every hour and never stalls.
+  it.each([1, -1])('cycles without ever repeating a position (%i per step)', (direction) => {
+    const cycle = SHIFT_HOURS_LIMIT + 1
+    const seen: number[] = []
+    let hours = 0
+    for (let step = 0; step < cycle; step += 1) {
+      hours = wrapShiftHours(hours + direction)
+      seen.push(hours)
+    }
+    expect(new Set(seen).size).toBe(cycle)
+    expect(seen[cycle - 1]).toBe(0)
+    expect(seen.every((value) => Math.abs(value) <= SHIFT_HOURS_LIMIT)).toBe(true)
+  })
+
+  it('stays inside the range for any input, however far past the end', () => {
+    for (const value of [25, 49, 50, 1000, -25, -49, -50, -1000]) {
+      expect(Math.abs(wrapShiftHours(value)), `${value}`).toBeLessThanOrEqual(SHIFT_HOURS_LIMIT)
+    }
   })
 
   it('returns whole hours for fractional input', () => {
-    expect(clampShiftHours(3.7)).toBe(3)
-    expect(clampShiftHours(-3.7)).toBe(-3)
-    expect(clampShiftHours(24.9)).toBe(24)
+    expect(wrapShiftHours(3.7)).toBe(3)
+    expect(wrapShiftHours(-3.7)).toBe(-3)
+    expect(wrapShiftHours(24.9)).toBe(24)
     // Object.is distinguishes -0 from 0, so this pins zero to one representation.
-    expect(clampShiftHours(-0.4)).toBe(0)
-    expect(Number.isInteger(clampShiftHours(0.9))).toBe(true)
+    expect(wrapShiftHours(-0.4)).toBe(0)
+    expect(Number.isInteger(wrapShiftHours(0.9))).toBe(true)
   })
 
-  it('never escapes the range for non-finite input', () => {
-    expect(clampShiftHours(Number.NaN)).toBe(0)
-    expect(clampShiftHours(Number.POSITIVE_INFINITY)).toBe(24)
-    expect(clampShiftHours(Number.NEGATIVE_INFINITY)).toBe(-24)
+  // A non-finite shift has no position a day away from it, so there is no end
+  // to wrap onto; reading it as unshifted is the only safe answer.
+  it('reads non-finite input as unshifted', () => {
+    expect(wrapShiftHours(Number.NaN)).toBe(0)
+    expect(wrapShiftHours(Number.POSITIVE_INFINITY)).toBe(0)
+    expect(wrapShiftHours(Number.NEGATIVE_INFINITY)).toBe(0)
   })
 })
 

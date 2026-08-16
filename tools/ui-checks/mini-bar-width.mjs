@@ -26,7 +26,7 @@ const MIN_BLOCK_PX = 1
 
 /**
  * Safety net for the two shift loops. They press until the UI stops answering
- * differently rather than assuming the clamp's value, so a changed limit still
+ * differently rather than assuming the range end's value, so a changed limit still
  * lands them on the widest label line.
  */
 const MAX_SHIFT_PRESSES = 100
@@ -83,40 +83,58 @@ async function selectZone(page, zone, label) {
 }
 
 /**
- * Press ArrowUp until the shift stops growing, and return the label it settled
- * on. The clamp is read off the UI instead of hardcoded, and an empty result
- * means the presses never reached the clock area at all.
+ * Press ArrowUp to the far end of the range and return the label it reads
+ * there. The end is read off the UI instead of hardcoded: the range wraps back
+ * to now one step past it, so the wrap is the sentinel — the label seen just
+ * before the amount goes empty is the end, and the presses that reached it are
+ * counted so it can be climbed again. An empty first reading means the presses
+ * never landed on the clock area at all.
  */
-async function shiftToClamp(page) {
+async function shiftToRangeEnd(page) {
   await page.focus('.mini-bar__clock')
   let previous = await readShift(page)
   for (let press = 0; press < MAX_SHIFT_PRESSES; press += 1) {
     await page.keyboard.press('ArrowUp')
     await nextFrame(page)
     const current = await readShift(page)
-    if (current === previous) {
-      if (current === '') throw new Error('the clock area never took the keyboard shift')
-      return current
+    if (current === '') {
+      if (previous === '') throw new Error('the clock area never took the keyboard shift')
+      // The wrap landed on now; climb back to the end it wrapped from.
+      for (let back = 0; back < press; back += 1) {
+        await page.keyboard.press('ArrowUp')
+        await nextFrame(page)
+      }
+      const settled = await readShift(page)
+      if (settled !== previous) {
+        throw new Error(`climbing back reached ${settled}, expected ${previous}`)
+      }
+      return previous
     }
     previous = current
   }
-  throw new Error(`the shift did not saturate within ${MAX_SHIFT_PRESSES} presses`)
+  throw new Error(
+    `the shift did not reach the end of its range within ${MAX_SHIFT_PRESSES} presses`
+  )
 }
 
 /**
- * One more ArrowUp between zones. The shift is already at the clamp so the
- * amount does not move, but the press restarts the ten-second auto-return that
- * would otherwise drop the sweep back to now halfway through.
+ * Two presses between zones, down and back up. The amount ends where it
+ * started, but the input restarts the ten-second auto-return that would
+ * otherwise drop the sweep back to now halfway through. The order matters:
+ * pressing up first would wrap off the end to now, and the following press
+ * down would then land an hour the wrong side of it.
  */
-async function holdAtClamp(page, clampLabel) {
+async function holdAtRangeEnd(page, endLabel) {
   await page.focus('.mini-bar__clock')
+  await page.keyboard.press('ArrowDown')
+  await nextFrame(page)
   await page.keyboard.press('ArrowUp')
   await nextFrame(page)
-  if ((await readShift(page)) === clampLabel) return
+  if ((await readShift(page)) === endLabel) return
   // The auto-return beat us to it; climb back up and carry on.
-  const recovered = await shiftToClamp(page)
-  if (recovered !== clampLabel) {
-    throw new Error(`the shift came back as ${recovered}, expected ${clampLabel}`)
+  const recovered = await shiftToRangeEnd(page)
+  if (recovered !== endLabel) {
+    throw new Error(`the shift came back as ${recovered}, expected ${endLabel}`)
   }
 }
 
@@ -294,10 +312,10 @@ async function sweepCombination(page, { language, format, zones, verbose }) {
     await record(zone)
   }
 
-  const clampLabel = await shiftToClamp(page)
+  const endLabel = await shiftToRangeEnd(page)
   for (const { zone, label } of zones) {
     await selectZone(page, zone, label)
-    await holdAtClamp(page, clampLabel)
+    await holdAtRangeEnd(page, endLabel)
     await record(zone)
   }
   await releaseShift(page)
@@ -324,7 +342,7 @@ async function sweepCombination(page, { language, format, zones, verbose }) {
     }
   }
   console.log(
-    `  ${results.length} cases (${zones.length} zones, unshifted and at the ${clampLabel} clamp), ` +
+    `  ${results.length} cases (${zones.length} zones, unshifted and at ${endLabel}), ` +
       `${overflowing.length} overflowing`
   )
 

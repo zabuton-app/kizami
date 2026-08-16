@@ -34,7 +34,7 @@ node tools/ui-checks/mini-bar-width.mjs --self-check
 ```
 
 It sweeps both interface languages, both clock formats, every zone the
-settings control offers, and each of those unshifted and at the shift clamp —
+settings control offers, and each of those unshifted and at the end of the shift range —
 208 cases in about 25 seconds. Per combination it prints the tightest case in
 full: the bar's `clientWidth` and `scrollWidth`, the width of the clock area,
 the date and the expand button, and the width left over for the progress
@@ -46,7 +46,7 @@ the progress blocks — the only child allowed to shrink, so the first thing to
 go — are squeezed under a pixel. Any of those exits non-zero.
 
 Nothing about the budget is hardcoded: the zone list comes from the settings
-control, the shift clamp is found by pressing until the amount stops moving,
+control, the end of the shift range is found by pressing until the amount wraps back to now,
 and the padding, gaps and block cap are read back from the computed styles. The
 numbers below are what the check reported when it was written, recorded as a
 baseline rather than asserted.
@@ -70,7 +70,7 @@ stacking them.
 ## clock-shift
 
 Drives clock mode's shift interaction end to end: both rows moving together,
-the signed amount, the one-hour notch, the range saturating at both ends, the
+the signed amount, the one-hour notch, the range wrapping back to now past either end, the
 scroll working on the card and on the mini bar, the amount surviving a switch
 between the two window forms, the ten-second return to now and its restart on
 a later input, the scroll-to-update delay, and the accessible names
@@ -90,15 +90,15 @@ node tools/ui-checks/clock-shift.mjs --self-check=never-expire
 Seven cases in about 45 seconds; the self-check takes about 80 seconds
 because it launches a fresh instance per fault.
 
-| Case               | Requirements            | What it drives                               |
-| ------------------ | ----------------------- | -------------------------------------------- |
-| `normal-scroll`    | 3.1, 3.2, 3.8, 4.1      | Five notches over the card, two zones        |
-| `mini-scroll`      | 3.1, 3.2, 3.6, 3.8, 4.4 | The same over the mini bar                   |
-| `saturation`       | 3.1, 3.3, 3.4           | Every notch to +24h, then to -24h, then past |
-| `form-switch`      | 3.6, 3.7                | Collapse and expand with an amount held      |
-| `accessible-names` | 4.4, 7.2                | Both surfaces in both languages              |
-| `auto-return`      | 5.1                     | One notch, then nothing for ten seconds      |
-| `restart-wait`     | 5.2                     | A second input part-way through the wait     |
+| Case               | Requirements            | What it drives                                       |
+| ------------------ | ----------------------- | ---------------------------------------------------- |
+| `normal-scroll`    | 3.1, 3.2, 3.8, 4.1      | Five notches over the card, two zones                |
+| `mini-scroll`      | 3.1, 3.2, 3.6, 3.8, 4.4 | The same over the mini bar                           |
+| `range-wrap`       | 3.1, 3.3, 3.4           | Every notch to each end, then the wrap to now and on |
+| `form-switch`      | 3.6, 3.7                | Collapse and expand with an amount held              |
+| `accessible-names` | 4.4, 7.2                | Both surfaces in both languages                      |
+| `auto-return`      | 5.1                     | One notch, then nothing for ten seconds              |
+| `restart-wait`     | 5.2                     | A second input part-way through the wait             |
 
 Everything is real input through Chromium: `page.mouse.wheel` for the notches
 and `page.keyboard.press` for the accessible equivalent, never a synthetic
@@ -108,7 +108,7 @@ would never notice.
 
 Nothing is asserted against the app's own arithmetic. The expected offset
 between the two rows is computed here from the zone id, so a display that
-agrees with itself but not with the world still fails; the clamp, the notch
+agrees with itself but not with the world still fails; the range end, the notch
 size, the auto-return wait and the hour unit are read out of `src/shared` at
 startup rather than hardcoded, so a change there is compared against, not
 silently accepted. Because those come from the source and the run drives the
@@ -139,7 +139,8 @@ so explicitly if it ever gets close.
 Each self-check fault sabotages the running page — stopping wheel events
 before they reach the app, pinning the comparison row to a time of its own,
 stalling the wheel path past the budget, letting the amount creep past the
-clamp, dropping it on collapse, swallowing the auto-return's `setTimeout`,
+end of the range, pinning it there instead of wrapping to now, dropping it on
+collapse, swallowing the auto-return's `setTimeout`,
 neutering the `clearTimeout` that restarts it, stripping the accessible name,
 announcing the ticking clock text — and names the case and requirement that
 must catch it. A fault that goes unnoticed exits non-zero, so the check

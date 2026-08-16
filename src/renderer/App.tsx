@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { clampShiftHours, SHIFT_RESET_MS } from '../shared/clock'
+import { SHIFT_RESET_MS, wrapShiftHours } from '../shared/clock'
 import { detectLanguage } from '../shared/settings'
 import { DEFAULT_THEME, THEMES, type ThemeId } from '../shared/themes'
 import type { SecondaryTimeZone } from '../shared/timezones'
@@ -66,10 +66,12 @@ function applyThemeTokens(themeId: ThemeId): void {
 
 /**
  * How far the clock display is moved from now, and what it takes to keep
- * moving it. `hours` is always clamped; `remainder` is the sub-step distance
- * the wheel accumulator carries between events; `nonce` counts inputs so the
+ * moving it. `hours` is always inside the allowed range, wrapping back to
+ * zero past either end; `remainder` is the sub-step distance the wheel
+ * accumulator carries between events; `nonce` counts inputs so the
  * auto-return timer can restart on one that leaves `hours` alone — a scroll
- * that only accumulates remainder, or one against the end of the range.
+ * that only accumulates remainder, since every input that reaches a step now
+ * moves the clock somewhere.
  */
 export interface ShiftState {
   readonly hours: number
@@ -100,7 +102,7 @@ const NO_SHIFT: ShiftState = { hours: 0, remainder: 0, nonce: 0 }
 export function shiftByWheel(state: ShiftState, deltaY: number, deltaMode: number): ShiftState {
   const { steps, remainder } = accumulateWheelSteps(state.remainder, deltaY, deltaMode)
   return {
-    hours: clampShiftHours(state.hours + steps),
+    hours: wrapShiftHours(state.hours + steps),
     remainder,
     nonce: state.nonce + 1
   }
@@ -113,7 +115,7 @@ export function shiftByWheel(state: ShiftState, deltaY: number, deltaMode: numbe
  */
 export function shiftByDirection(state: ShiftState, direction: 1 | -1): ShiftState {
   return {
-    hours: clampShiftHours(state.hours + direction),
+    hours: wrapShiftHours(state.hours + direction),
     remainder: 0,
     nonce: state.nonce + 1
   }

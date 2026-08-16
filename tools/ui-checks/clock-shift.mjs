@@ -13,7 +13,7 @@ import { launchApp, repoRoot, sleep } from '../demo-capture/lib.mjs'
 
 /**
  * Read a numeric `export const` out of a source file. The check has to predict
- * the clamp, the notch size and the auto-return wait, and hardcoding them here
+ * the range end, the notch size and the auto-return wait, and hardcoding them here
  * would let the two drift apart silently. It reads the source rather than the
  * bundle, so a run against a stale `out/` compares against the wrong numbers —
  * which is why a fresh `npm run build` is a prerequisite.
@@ -129,7 +129,7 @@ const HOUR_UNIT = readMessage(LANGUAGE, 'clock.hourUnit')
 const shiftLabel = (hours) =>
   hours === 0 ? '' : `${hours > 0 ? '+' : '-'}${Math.abs(hours)}${HOUR_UNIT}`
 
-const CLAMP_LABEL = shiftLabel(SHIFT_HOURS_LIMIT)
+const RANGE_END_LABEL = shiftLabel(SHIFT_HOURS_LIMIT)
 
 const ms = (value) => `${value.toFixed(1)}ms`
 
@@ -524,46 +524,46 @@ async function scrollCase(ctx, form) {
   return unit
 }
 
-/** The range saturates at both ends and stays there (3.3, 3.4). */
-async function saturationCase(ctx) {
+/** The range holds to its ends, then wraps back to now and carries on (3.3, 3.4). */
+async function rangeCase(ctx) {
   const surface = SURFACES.normal
-  const unit = startCase('saturation', '3.1, 3.3, 3.4')
+  const unit = startCase('range-wrap', '3.1, 3.3, 3.4')
   await resetShift(ctx)
   await pointAt(ctx.page, surface)
 
+  // The backward leg deliberately starts wherever the forward leg left off
+  // rather than resetting, so the run walks straight down through zero and out
+  // the other side. Wrapping is all sign handling, and a leg that always starts
+  // at zero would never cross the sign in one continuous gesture.
+  let hours = 0
+
   for (const direction of [1, -1]) {
-    const clamp = SHIFT_HOURS_LIMIT * direction
+    const end = SHIFT_HOURS_LIMIT * direction
+
     // Every notch on the way is checked, so a step that moves by two hours or
-    // by none is caught long before the clamp is reached (3.1).
-    const from = direction === 1 ? 0 : SHIFT_HOURS_LIMIT
-    for (let step = 1; step <= Math.abs(clamp - from); step += 1) {
+    // by none is caught long before the end is reached (3.1).
+    while (hours !== end) {
       await wheelNotch(ctx.page, direction)
-      const hours = from + step * direction
+      hours += direction
       if (!(await expectShift(unit, ctx.page, surface, hours, '3.3'))) return unit
     }
-    note(unit, `${direction > 0 ? 'forward' : 'backward'}   reached ${shiftLabel(clamp)}`)
+    note(unit, `${direction > 0 ? 'forward ' : 'backward'}  reached ${shiftLabel(end)}`)
 
-    // Past the end: the display must not move, and the extra input must not be
-    // banked up somewhere to be spent later (3.4).
-    const before = await readClockStamped(ctx.page, surface)
-    for (let extra = 0; extra < 3; extra += 1) {
+    // One notch past the end returns to now rather than stopping there, and the
+    // next ones keep going, so scrolling one way never stalls (3.4).
+    await wheelNotch(ctx.page, direction)
+    hours = 0
+    if (!(await expectShift(unit, ctx.page, surface, hours, '3.4'))) return unit
+    note(unit, '          one more notch wrapped it back to now')
+
+    for (let step = 1; step <= 2; step += 1) {
       await wheelNotch(ctx.page, direction)
-      await sleep(RENDER_MS)
+      hours += direction
+      if (!(await expectShift(unit, ctx.page, surface, hours, '3.4'))) return unit
     }
     const after = await readClockStamped(ctx.page, surface)
-    if (after.shift !== shiftLabel(clamp)) {
-      fail(
-        unit,
-        '3.4',
-        `three notches past the end moved the amount from ${before.shift} to ${after.shift}`
-      )
-      return unit
-    }
-    checkRows(unit, after, { zone: ZONE_WHOLE_HOUR, hours: clamp, requirement: '3.4' })
-    note(
-      unit,
-      `          three more notches left it at ${after.shift}, rows ${after.times.join(' / ')}`
-    )
+    checkRows(unit, after, { zone: ZONE_WHOLE_HOUR, hours, requirement: '3.4' })
+    note(unit, `          and carried on to ${after.shift}, rows ${after.times.join(' / ')}`)
   }
 
   await resetShift(ctx)
@@ -783,7 +783,7 @@ async function accessibleNamesCase(ctx) {
 const CASES = [
   { id: 'normal-scroll', run: (ctx) => scrollCase(ctx, 'normal'), form: 'normal' },
   { id: 'mini-scroll', run: (ctx) => scrollCase(ctx, 'mini'), form: 'mini' },
-  { id: 'saturation', run: saturationCase, form: 'normal' },
+  { id: 'range-wrap', run: rangeCase, form: 'normal' },
   { id: 'form-switch', run: formSwitchCase, form: 'normal' },
   { id: 'accessible-names', run: accessibleNamesCase, form: 'normal' },
   { id: 'auto-return', run: autoReturnCase, form: 'normal' },
@@ -851,15 +851,15 @@ const FAULTS = [
       }, UPDATE_BUDGET_MS)
   },
   {
-    id: 'saturation-drift',
-    why: 'the amount settles somewhere other than the clamp',
-    breaks: [{ caseId: 'saturation', requirement: '3.3' }],
+    id: 'range-drift',
+    why: 'the amount settles somewhere other than the end of the range',
+    breaks: [{ caseId: 'range-wrap', requirement: '3.3' }],
     install: (page) =>
       page.evaluate(
         (arg) => {
           const rewrite = () => {
             for (const badge of document.querySelectorAll('.timer__shift, .mini-bar__shift')) {
-              if (badge.textContent === arg.clamp) badge.textContent = arg.wrong
+              if (badge.textContent === arg.rangeEnd) badge.textContent = arg.wrong
             }
           }
           new globalThis.MutationObserver(rewrite).observe(document.body, {
@@ -869,34 +869,59 @@ const FAULTS = [
           })
           rewrite()
         },
-        { clamp: CLAMP_LABEL, wrong: shiftLabel(SHIFT_HOURS_LIMIT + 2) }
+        { rangeEnd: RANGE_END_LABEL, wrong: shiftLabel(SHIFT_HOURS_LIMIT + 2) }
       )
   },
   {
-    id: 'clamp-creep',
-    why: 'notches past the end keep moving the amount',
-    breaks: [{ caseId: 'saturation', requirement: '3.4' }],
+    id: 'wrap-stalls',
+    why: 'the amount sticks at the end of the range instead of wrapping to now',
+    breaks: [{ caseId: 'range-wrap', requirement: '3.4' }],
     install: (page) =>
       page.evaluate(
         (arg) => {
-          let atClamp = false
-          let bonus = 0
-          globalThis.addEventListener(
-            'wheel',
-            () => {
-              const badge = document.querySelector('.timer__shift, .mini-bar__shift')
-              if (badge === null) return
-              if (atClamp) {
-                bonus += 1
-                badge.textContent = `+${arg.limit + bonus}${arg.unit}`
-                return
-              }
-              if (badge.textContent === arg.clamp) atClamp = true
-            },
-            { capture: true }
-          )
+          // Once the end is reached, pin the badge there however far the user
+          // scrolls — the pre-wrap behaviour this check now rejects.
+          let atEnd = false
+          const pin = () => {
+            for (const badge of document.querySelectorAll('.timer__shift, .mini-bar__shift')) {
+              if (badge.textContent === arg.rangeEnd) atEnd = true
+              else if (atEnd) badge.textContent = arg.rangeEnd
+            }
+          }
+          new globalThis.MutationObserver(pin).observe(document.body, {
+            childList: true,
+            subtree: true,
+            characterData: true
+          })
+          pin()
         },
-        { clamp: CLAMP_LABEL, limit: SHIFT_HOURS_LIMIT, unit: HOUR_UNIT }
+        { rangeEnd: RANGE_END_LABEL }
+      )
+  },
+  {
+    id: 'wrap-stalls-backward',
+    why: 'the backward end sticks instead of wrapping, which the forward fault cannot reach',
+    breaks: [{ caseId: 'range-wrap', requirement: '3.4' }],
+    install: (page) =>
+      page.evaluate(
+        (arg) => {
+          // Once the end is reached, pin the badge there however far the user
+          // scrolls — the pre-wrap behaviour this check now rejects.
+          let atEnd = false
+          const pin = () => {
+            for (const badge of document.querySelectorAll('.timer__shift, .mini-bar__shift')) {
+              if (badge.textContent === arg.rangeEnd) atEnd = true
+              else if (atEnd) badge.textContent = arg.rangeEnd
+            }
+          }
+          new globalThis.MutationObserver(pin).observe(document.body, {
+            childList: true,
+            subtree: true,
+            characterData: true
+          })
+          pin()
+        },
+        { rangeEnd: shiftLabel(-SHIFT_HOURS_LIMIT) }
       )
   },
   {
@@ -1045,7 +1070,7 @@ async function runAll(app, verbose) {
   const ctx = await prepare(app)
   console.log(
     `clock shift check: ${CASES.length} cases, ${LANGUAGE}/${CLOCK_FORMAT}, ` +
-      `one notch = ${WHEEL_STEP_PX}px, clamp +/-${SHIFT_HOURS_LIMIT}h, ` +
+      `one notch = ${WHEEL_STEP_PX}px, range +/-${SHIFT_HOURS_LIMIT}h wrapping to now, ` +
       `auto-return ${SHIFT_RESET_MS}ms`
   )
   let failing = 0
