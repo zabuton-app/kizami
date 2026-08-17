@@ -92,8 +92,15 @@
           0 18px 44px rgba(20, 14, 8, 0.35),
           0 4px 12px rgba(20, 14, 8, 0.25);
       }
+      .desktop .popups {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1.2rem;
+        width: 100%;
+      }
       .desktop img.popup {
-        width: min(320px, 70%);
+        width: min(300px, 70%);
       }
       .desktop img.mini {
         width: min(340px, 80%);
@@ -223,11 +230,18 @@
 
       <div class="scene">
         <div class="desktop">
-          <img
-            class="popup"
-            src="./assets/shot-timer.png"
-            alt="The kizami timer popup — a focus session in progress with colorful progress blocks filling in"
-          />
+          <div class="popups">
+            <img
+              class="popup"
+              src="./assets/shot-timer.png"
+              alt="The kizami timer popup — a focus session in progress with colorful progress blocks filling in"
+            />
+            <img
+              class="popup"
+              src="./assets/shot-clock.png"
+              alt="kizami's clock mode — home and New York time stacked, with preset countdown timer buttons"
+            />
+          </div>
           <img
             class="mini"
             src="./assets/shot-mini.png"
@@ -293,7 +307,7 @@
           <h3>🍅 Classic pomodoro cycle</h3>
           <p>
             Focus (25 min) → short break (5 min), four times, then a long break (15 min). Every
-            duration is configurable.
+            duration and the number of sessions are configurable.
           </p>
         </div>
         <div class="card">
@@ -308,6 +322,13 @@
           <p>
             Shrink the popup to a slim horizontal bar that stays out of the way: just the countdown
             and a start/stop button.
+          </p>
+        </div>
+        <div class="card">
+          <h3>🕐 Clock mode &amp; world clock</h3>
+          <p>
+            Turn the popup into a desk clock with a second city, scroll to shift both times for
+            meeting planning, and start preset countdown timers right from the clock.
           </p>
         </div>
         <div class="card">

@@ -15,18 +15,19 @@ Only `playwright-core` is needed — no browser download, no extra install step.
 ## Usage
 
 ```bash
-# All three shots, straight into docs/assets/
+# All four shots, straight into docs/assets/
 node tools/demo-capture/shoot-shots.mjs
 
 # Or just the ones you need
-node tools/demo-capture/shoot-shots.mjs timer settings mini
+node tools/demo-capture/shoot-shots.mjs timer settings mini clock
 ```
 
-| Shot       | File                | What it captures                        |
-| ---------- | ------------------- | --------------------------------------- |
-| `timer`    | `shot-timer.png`    | Timer view, 13:42 into a focus phase    |
-| `settings` | `shot-settings.png` | Settings view, via the gear button      |
-| `mini`     | `shot-mini.png`     | Mini mode bar, via the title bar button |
+| Shot       | File                | What it captures                                    |
+| ---------- | ------------------- | --------------------------------------------------- |
+| `timer`    | `shot-timer.png`    | Timer view, 13:42 into a focus phase                |
+| `settings` | `shot-settings.png` | Settings view, via the gear button                  |
+| `mini`     | `shot-mini.png`     | Mini mode bar, via the title bar button             |
+| `clock`    | `shot-clock.png`    | Clock mode with a comparison city and timer presets |
 
 Each shot launches its own instance against a throwaway user-data directory, so
 a run never touches your real settings even though it clicks UI that persists

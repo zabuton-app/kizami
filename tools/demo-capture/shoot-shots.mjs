@@ -14,14 +14,33 @@ const TRANSITION_MS = 500
 const SHOTS = {
   timer: { file: 'shot-timer.png', elapsedMs: ELAPSED_MS },
   settings: { file: 'shot-settings.png', click: '.titlebar__gear' },
-  mini: { file: 'shot-mini.png', elapsedMs: ELAPSED_MS, click: '.titlebar__mini' }
+  mini: { file: 'shot-mini.png', elapsedMs: ELAPSED_MS, click: '.titlebar__mini' },
+  clock: {
+    file: 'shot-clock.png',
+    // Pick a comparison city first so the clock shows both rows, then flip
+    // the popup into clock mode where the preset timer buttons are visible.
+    async drive(page) {
+      await page.click('.titlebar__gear')
+      await page.selectOption('.tz-select', 'America/New_York')
+      await page.click('.titlebar__gear')
+      await sleep(TRANSITION_MS)
+      await page.click('.titlebar__clock')
+      // The pair class appears only once the comparison row renders, so this
+      // fails loudly if the city did not stick instead of shooting one row.
+      await page.waitForSelector('.timer__rows--pair')
+    }
+  }
 }
 
-async function shoot({ file, elapsedMs, click }) {
+async function shoot({ file, elapsedMs, click, drive }) {
   const app = await launchApp({ elapsedMs })
   try {
     if (click) {
       await app.page.click(click)
+      await sleep(TRANSITION_MS)
+    }
+    if (drive) {
+      await drive(app.page)
       await sleep(TRANSITION_MS)
     }
     return await app.capture(file)

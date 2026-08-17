@@ -44,6 +44,13 @@ sleep without drifting. There are no native dependencies.
   start/stop button.
 - **Clock mode.** Turn the popup into a desk clock (hh:mm or hh:mm:ss) with a
   bar showing how much of the day has passed, while the timer keeps running.
+- **World clock.** Pick a comparison city and the clock shows both times at
+  once; scrolling over the clock shifts both rows hour by hour to answer "if we
+  meet at 16:00 my time, what is that for them?" — it snaps back to now on its
+  own.
+- **Preset timers.** Kitchen-timer style countdowns (5 min to 1 hour) started
+  straight from clock mode, with a desktop notification when time is up —
+  independent of the pomodoro cycle.
 - **Five candy themes.** candy, strawberry milk, melon soda, grape gummy, and
   night pudding, switchable from the dots in the popup.
 - **Two tray icons.** The 刻 mark or the original tomato.
@@ -53,14 +60,20 @@ sleep without drifting. There are no native dependencies.
 
 ## Screenshots
 
-Durations, sessions per cycle, auto-start, time display, clock format, task
-name, language, and the tray icon are all set from the settings view:
+Durations, sessions per cycle, auto-start, time display, clock format, the
+comparison city, task name, language, and the tray icon are all set from the
+settings view:
 
 ![The kizami settings view](./docs/assets/shot-settings.png)
 
 Mini mode shrinks the popup to a slim horizontal bar that stays out of the way:
 
 ![kizami mini mode — a slim bar with the countdown](./docs/assets/shot-mini.png)
+
+Clock mode turns the popup into a desk clock, with an optional comparison city
+and preset countdown timers:
+
+![kizami clock mode — home and New York time with preset timer buttons](./docs/assets/shot-clock.png)
 
 ## Install
 

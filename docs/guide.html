@@ -311,14 +311,18 @@
       </ul>
 
       <h2 id="clock">Clock mode</h2>
+      <img
+        class="shot small"
+        src="./assets/shot-clock.png"
+        alt="The kizami clock mode — home and New York time stacked over the day-progress blocks, with preset countdown timer buttons below"
+      />
       <p>
         Click the <strong>clock button</strong> in the popup's title bar to turn the popup into a
         clock. The layout stays the same — only the readout changes: the header reads
         <strong>Clock Mode</strong>, the big number shows the current time of day, and the progress
-        blocks fill as the day goes by — empty at midnight, half full at noon. The timer buttons
-        stay visible but disabled, while the theme picker keeps working. The pomodoro timer keeps
-        running in the background and phase notifications still arrive; click the button again to
-        get back to the timer.
+        blocks fill as the day goes by — empty at midnight, half full at noon. The theme picker
+        keeps working, the pomodoro timer keeps running in the background and phase notifications
+        still arrive; click the button again to get back to the timer.
       </p>
       <ul>
         <li>
@@ -326,8 +330,23 @@
           <strong>hh:mm:ss</strong> — pick the format in <a href="#settings">Settings</a>.
         </li>
         <li>
-          Clock mode works in <a href="#mini">mini mode</a> too: the bar shows the time, the day
-          progress, the date with the weekday, and the expand button.
+          Pick a <strong>comparison city</strong> in <a href="#settings">Settings</a> and the clock
+          shows two rows: your home time and that city's, with its offset. Scroll over the clock (or
+          focus it and press ↑/↓) to shift both rows hour by hour — a day either way, and one step
+          further wraps back to now — to answer "if we meet at 16:00 my time, what is that for
+          them?". The display snaps back to the real time on its own ten seconds after the last
+          adjustment.
+        </li>
+        <li>
+          The buttons under the clock start a <strong>preset countdown timer</strong> (5, 10, 15,
+          30, or 60 minutes) — a quick kitchen timer, independent of the pomodoro cycle. A desktop
+          notification fires when time is up; the × button cancels a running timer, and picking
+          another preset simply replaces it.
+        </li>
+        <li>
+          Clock mode works in <a href="#mini">mini mode</a> too: the bar shows the time (both
+          cities, when a comparison city is set), the day progress, the date with the weekday, and
+          the expand button.
         </li>
         <li>kizami remembers the mode and reopens the same way next time.</li>
       </ul>
@@ -357,7 +376,7 @@
       <img
         class="shot small"
         src="./assets/shot-settings.png"
-        alt="The kizami settings view with duration steppers, sessions per cycle stepper, auto-start toggle, time display switch, clock display switch, task name field, language and tray icon switches, and update check"
+        alt="The kizami settings view with duration steppers, sessions per cycle stepper, auto-start toggle, time display switch, clock display switch, comparison city selector, and the top of the task name field"
       />
       <p>Open Settings with the <strong>gear button</strong> in the popup's title bar.</p>
       <table>
@@ -392,6 +411,13 @@
           <td>
             The time format used by <a href="#clock">clock mode</a>: hh:mm (the default) or
             hh:mm:ss.
+          </td>
+        </tr>
+        <tr>
+          <td>Comparison city</td>
+          <td>
+            A second city whose time <a href="#clock">clock mode</a> shows under your own, from a
+            list of major cities. "Not set" (the default) keeps the clock to a single row.
           </td>
         </tr>
         <tr>
@@ -441,7 +467,8 @@
       <ul>
         <li>
           <code>~/.config/kizami/settings.json</code> — durations, sessions per cycle, auto-start,
-          time display, clock mode and its format, task name, language, theme, and window mode.
+          time display, clock mode and its format, the comparison city, task name, language, theme,
+          and window mode.
         </li>
         <li>
           <code>~/.config/kizami/update.json</code> — update-check state: whether the automatic
