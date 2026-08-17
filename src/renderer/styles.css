@@ -350,6 +350,9 @@ body {
 }
 
 .mini-bar {
+  /* Height of a cell's label line, shared by the label and by the offset that
+     keeps the times centred on the gauge. */
+  --mini-label-line: 9px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -420,7 +423,9 @@ body {
 
 .mini-bar__cell-label {
   font-weight: 700;
-  font-size: 9px;
+  /* Shared with the offset that centres the times on the gauge below, so the
+     two cannot drift apart. At line-height 1 this is the line's whole height. */
+  font-size: var(--mini-label-line);
   line-height: 1;
   color: var(--sub);
   white-space: nowrap;
@@ -452,6 +457,19 @@ body {
   /* The 24px clock is nudged up to meet the phase dot beside it; at this size
      the cell centres it instead, so the nudge would only unbalance it. */
   transform: none;
+}
+
+/* The bar centres its children, and a cell is a label line stacked on a time,
+   so centring the cell leaves the times sitting half a label line below the
+   gauge and the expand button beside them. Reserving the label's height as
+   bottom margin fixes that without moving anything else: a centred flex item
+   splits its margins, so the cell rises by half the label and the times land
+   on the gauge's line while the label overhangs above.
+
+   Only on the paired clock. Alone, the label line is empty and generates no
+   box, so there is nothing to correct and 007's bar has to stay untouched. */
+.mini-bar__clock--pair {
+  margin-bottom: var(--mini-label-line);
 }
 
 /* Shifted cells read as "not now" before the amount is read at all (4.2,
