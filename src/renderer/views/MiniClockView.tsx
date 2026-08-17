@@ -184,11 +184,14 @@ export function MiniClockView({
       </div>
       {/* The running clock-mode timer, mirrored read-only: the bar follows the
           established convention of reflecting state without offering controls
-          (starting and cancelling live in the normal window). Rendered only
-          while a timer exists, so the idle bar is unchanged. */}
+          (starting and cancelling live in the normal window). role="img" so
+          the label is legal and exposed on a span; not a live region — it
+          changes every second. Rendered only while running, so the idle bar
+          is unchanged. */}
       {clockTimer !== null && clockTimer.status === 'running' && (
         <span
           className="mini-bar__ctimer"
+          role="img"
           aria-label={`${t(language, 'clockTimer.remainingLabel')} ${formatClockTimerTime(
             clockTimer.remainingSec
           )}`}
@@ -196,11 +199,15 @@ export function MiniClockView({
           {formatClockTimerTime(clockTimer.remainingSec)}
         </span>
       )}
-      {clockTimer !== null && clockTimer.status === 'completed' && (
-        <span className="mini-bar__ctimer mini-bar__ctimer--done" role="status">
-          {t(language, 'clockTimer.done')}
-        </span>
-      )}
+      {/* Always in the document: a live region only announces changes to a
+          region that already existed. Empty (any state but completed) the
+          stylesheet takes it out of flow, so the idle bar's layout is
+          untouched. */}
+      <span className="mini-bar__ctimer mini-bar__ctimer--done" role="status">
+        {clockTimer !== null && clockTimer.status === 'completed'
+          ? t(language, 'clockTimer.done')
+          : ''}
+      </span>
       <span className="mini-bar__date">
         {formatClockDate(
           realNow.getMonth() + 1,

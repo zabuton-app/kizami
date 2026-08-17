@@ -31,7 +31,14 @@ export class ClockTimerEngine extends EventEmitter<ClockTimerEngineEvents> {
   private interval: NodeJS.Timeout | null = null
 
   start(presetId: ClockTimerPresetId): ClockTimerSnapshot {
-    this.state = startClockTimer(presetId, Date.now())
+    const next = startClockTimer(presetId, Date.now())
+    if (next.status !== 'running') {
+      // A bad cast smuggled an unknown id past the type: keep the current
+      // timer instead of discarding it, and don't begin ticking over an idle
+      // state (an idle timer never completes, so its interval never stops).
+      return this.snapshot()
+    }
+    this.state = next
     this.startTicking()
     this.emit('update')
     return this.snapshot()

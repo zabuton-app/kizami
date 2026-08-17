@@ -215,40 +215,87 @@ export function ClockView({
           ))}
         </div>
       </div>
-      <div className="ctimer">
+      {/* One row in every state. The timer view's height floor
+          (WINDOW_MIN_CONTENT_HEIGHT) was measured with its single button row,
+          so clock mode staying a single row is what keeps the theme picker on
+          screen at the minimum window height; wrapping is only a safety net
+          for a translation that outgrows the sizes in the stylesheet. */}
+      <div className={timerStatus === 'idle' ? 'ctimer' : 'ctimer ctimer--active'}>
         {timerStatus === 'running' && clockTimer !== null && (
-          <div className="ctimer__row">
-            {/* Plain text rather than a live region: it changes every second,
-                and announcing that would talk over everything else. The
-                accessible name carries what the digits mean. */}
+          <>
+            {/* role="img" so the label is legal and exposed (a bare span is
+                generic and may not be named); not a live region — it changes
+                every second, and announcing that would talk over everything. */}
             <span
               className="ctimer__readout"
+              role="img"
               aria-label={`${t(language, 'clockTimer.remainingLabel')} ${formatClockTimerTime(
                 clockTimer.remainingSec
               )}`}
             >
               {formatClockTimerTime(clockTimer.remainingSec)}
             </span>
-            <button type="button" className="btn btn--secondary" onClick={onCancelClockTimer}>
-              {t(language, 'clockTimer.cancel')}
+            <button
+              type="button"
+              className="btn ctimer__cancel"
+              aria-label={t(language, 'clockTimer.cancel')}
+              title={t(language, 'clockTimer.cancel')}
+              onClick={onCancelClockTimer}
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M1 1 L9 9 M9 1 L1 9" />
+              </svg>
             </button>
-          </div>
+          </>
         )}
+        {/* Always in the document: a live region only announces changes to a
+            region that already existed, so the span stays mounted and only
+            its text appears on completion — which is once, and exactly what a
+            screen-reader user needs in place of glancing at the window. Empty
+            it is taken out of flow by the stylesheet. */}
+        <span className="ctimer__done" role="status">
+          {timerStatus === 'completed' ? t(language, 'clockTimer.done') : ''}
+        </span>
+        {/* Same 34px round-icon shape as the cancel button, so the completed
+            row is never wider than the running one and both fit one line at
+            every window width (a text button here pushed the row past the
+            card width and wrapped the presets off the height floor). */}
         {timerStatus === 'completed' && (
-          <div className="ctimer__row">
-            {/* A status region: completion happens once, so announcing it is
-                exactly what a screen-reader user needs in place of glancing
-                at the window. */}
-            <span className="ctimer__done" role="status">
-              {t(language, 'clockTimer.done')}
-            </span>
-            <button type="button" className="btn btn--primary" onClick={onDismissClockTimer}>
-              {t(language, 'clockTimer.dismiss')}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn ctimer__dismiss"
+            aria-label={t(language, 'clockTimer.dismiss')}
+            title={t(language, 'clockTimer.dismiss')}
+            onClick={onDismissClockTimer}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M1.5 6.5 L4.5 9.5 L10.5 2.5" />
+            </svg>
+          </button>
         )}
         {/* The presets stay visible while a timer runs so picking one simply
-            replaces it — the main process swaps the countdown atomically. */}
+            replaces it — the main process swaps the countdown atomically.
+            Beside a readout they compress to bare minute counts; the full
+            label stays on the accessible name and the tooltip. */}
         <div
           className="ctimer__presets"
           role="group"
@@ -259,9 +306,15 @@ export function ClockView({
               key={preset.id}
               type="button"
               className="btn btn--secondary"
+              aria-label={t(language, `clockTimer.preset.${preset.id}`)}
+              title={
+                timerStatus === 'idle' ? undefined : t(language, `clockTimer.preset.${preset.id}`)
+              }
               onClick={() => onStartClockTimer(preset.id)}
             >
-              {t(language, `clockTimer.preset.${preset.id}`)}
+              {timerStatus === 'idle'
+                ? t(language, `clockTimer.preset.${preset.id}`)
+                : preset.minutes}
             </button>
           ))}
         </div>

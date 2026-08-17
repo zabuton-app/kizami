@@ -96,6 +96,29 @@ describe('ClockTimerEngine completion', () => {
     engine.stop()
   })
 
+  it('ignores an unknown preset id, leaving the running timer untouched', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(T0)
+    const engine = new ClockTimerEngine()
+
+    engine.start('15m')
+    expect(engine.start('45m' as never)).toEqual({
+      status: 'running',
+      remainingSec: 15 * 60,
+      totalSec: 15 * 60
+    })
+
+    // An unknown id on an idle engine must not begin ticking either: an idle
+    // timer never completes, so its interval would never stop itself.
+    engine.cancel()
+    const onUpdate = vi.fn()
+    engine.on('update', onUpdate)
+    engine.start('45m' as never)
+    vi.advanceTimersByTime(5000)
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(engine.snapshot().status).toBe('idle')
+  })
+
   it('dismiss returns a completed timer to idle', () => {
     const now = vi.spyOn(Date, 'now').mockReturnValue(T0)
     const engine = new ClockTimerEngine()
