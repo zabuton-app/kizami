@@ -194,6 +194,35 @@ body {
   gap: 16px;
 }
 
+/* Clock mode's card is also its input surface: it takes focus, wheel events
+   and the arrow keys, and it anchors the shift badge. Kept a modifier so the
+   timer's card is untouched by any of it. */
+.timer__card--clock {
+  position: relative;
+}
+
+/* The card is deliberately unchanged by focus: its border and its shadow keep
+   one colour in every state, and a ring is not an option either — drawn around
+   the card it lands concentric with the 3px --ink border and reads as that
+   edge having doubled, which is the defect this replaced. The rule exists only
+   to suppress the browser's own ring, which would be exactly that concentric
+   line. The keyboard still shifts the clock; nothing marks where focus is. */
+.timer__card--clock:focus-visible {
+  outline: none;
+}
+
+/* Forced colours (Windows high contrast) is the one mode where the ring earns
+   its place: it is turned on by people who need a strong indicator, and it
+   renders nothing of the design above anyway — the card's colours are
+   overwritten wholesale there, so a doubled edge is not a cost that mode can
+   even pay. This block cannot affect the normal palette. */
+@media (forced-colors: active) {
+  .timer__card--clock:focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 6px;
+  }
+}
+
 .timer__time {
   font-weight: 900;
   font-size: 64px;
@@ -205,13 +234,107 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* One row: a bare column holding the single .timer__time, so the unset-zone
+   clock keeps spec 007's metrics exactly. */
+.timer__rows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Two rows: a two-column grid over the labels and the times, so the times
+   line up under each other however wide the city names are. Both rows are
+   sized down here — at 64px they would not fit the card together — and only
+   here, which is what leaves the single-row case alone. */
+.timer__rows--pair {
+  display: grid;
+  /* Label, time, then how far the row is from home. The third column is empty
+     on the home row, which is the datum, but it is still a column so the two
+     times stay aligned and the block centres as a whole. */
+  grid-template-columns: auto auto auto;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.timer__rows--pair .timer__time {
+  font-size: 40px;
+}
+
+.timer__row-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--sub);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* How far the comparison row runs from home, beside its time. Sized and
+   coloured like the row label so the two read as annotations around the time
+   rather than as figures competing with it, and left-aligned so the sign
+   starts at the same place on every offset. */
+.timer__row-offset {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--sub);
+  text-align: left;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Shifted rows read as "not now" before the badge is read at all (4.2). The
+   tint is drawn as a spread shadow and the dashed ring as an outline, so
+   neither takes any space and the rows do not jump when the shift starts.
+   The row text keeps --ink: recolouring 40px digits in an accent token costs
+   legibility on the lighter themes. */
+.timer__rows--shifted {
+  border-radius: 8px;
+  background: var(--empty);
+  box-shadow: 0 0 0 6px var(--empty);
+  outline: 2px dashed var(--badge);
+  outline-offset: 6px;
+}
+
+/* The shift amount, pinned to the card's corner so showing it never moves the
+   clock. Filled like .timer__session, but drawing its text in --card rather
+   than white so it stays legible on the dark theme's badge too. */
+.timer__shift {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-weight: 900;
+  font-size: 11px;
+  color: var(--card);
+  background: var(--badge);
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Unshifted, the badge is still in the document so its live region stays
+   registered; strip everything that would draw a bare pill (4.3). */
+.timer__shift:empty {
+  padding: 0;
+  background: none;
+}
+
+/* The strip's width is pinned rather than falling out of the block count, so
+   the two modes' gauges are the same size on screen even though they hold a
+   different number of blocks: ten for a phase, twelve for a day. 265px is what
+   the original ten 22px blocks and their nine 5px gaps came to. */
 .timer__blocks {
   display: flex;
   gap: 5px;
+  width: 265px;
+  justify-content: center;
 }
 
+/* Equal shares of whatever the strip has left after the gaps, so a change to
+   the count resizes the blocks instead of the gauge. Ten blocks still come out
+   at the 22px they were drawn at. */
 .timer__block {
-  width: 22px;
+  flex: 1 1 0;
   height: 14px;
   border-radius: 5px;
 }
@@ -236,6 +359,9 @@ body {
 }
 
 .mini-bar {
+  /* Height of a cell's label line, shared by the label and by the offset that
+     keeps the times centred on the gauge. */
+  --mini-label-line: 9px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -274,6 +400,97 @@ body {
   /* Zen Maru Gothic draws digits low in the line box, so nudge the clock up
      until the colon lines up with the phase dot beside it. */
   transform: translateY(-2px);
+}
+
+/* Clock mode's clock area: the wheel and keyboard surface, and the anchor for
+   the shifted treatment. It opts out of the drag region the same way
+   .mini-bar__toggle already does — a dragged region never delivers wheel
+   events to the DOM — while the bar around it stays draggable (3.6). */
+.mini-bar__clock {
+  display: flex;
+  /* Bottom-aligned so the times line up across the cells however tall the
+     label lines above them turn out to be. */
+  align-items: flex-end;
+  gap: 10px;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+.mini-bar__clock:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* One zone, stacked: a label line over the time. Stacking is what lets a
+   second zone cost only its own width rather than a label beside a time,
+   which is the difference between fitting the 380px bar and not (2.6). */
+.mini-bar__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mini-bar__cell-label {
+  font-weight: 700;
+  /* Shared with the offset that centres the times on the gauge below, so the
+     two cannot drift apart. At line-height 1 this is the line's whole height. */
+  font-size: var(--mini-label-line);
+  line-height: 1;
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+/* The shift amount rides the home cell's label line (`Home +8h`) instead of
+   taking an element of its own: the bar has no width to spare for a badge,
+   and the label line is already paid for (4.4). */
+.mini-bar__shift {
+  margin-left: 4px;
+  color: var(--badge);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Unshifted, the indication stays in the document so its live region remains
+   registered. Dropping the margin leaves an empty inline that generates no
+   line box, so the label line collapses to nothing and the unset-zone bar is
+   pixel-identical to 007's (4.3). */
+.mini-bar__shift:empty {
+  margin-left: 0;
+}
+
+/* Two zones: the clock is sized down so both cells, the date, the blocks and
+   the expand button all fit the bar's fixed width. Only here, which is what
+   leaves the unset-zone bar on 007's 24px clock. */
+.mini-bar__clock--pair .mini-bar__time {
+  font-size: 18px;
+  letter-spacing: 0;
+  /* The 24px clock is nudged up to meet the phase dot beside it; at this size
+     the cell centres it instead, so the nudge would only unbalance it. */
+  transform: none;
+}
+
+/* The bar centres its children, and a cell is a label line stacked on a time,
+   so centring the cell leaves the times sitting half a label line below the
+   gauge and the expand button beside them. Reserving the label's height as
+   bottom margin fixes that without moving anything else: a centred flex item
+   splits its margins, so the cell rises by half the label and the times land
+   on the gauge's line while the label overhangs above.
+
+   Only on the paired clock. Alone, the label line is empty and generates no
+   box, so there is nothing to correct and 007's bar has to stay untouched. */
+.mini-bar__clock--pair {
+  margin-bottom: var(--mini-label-line);
+}
+
+/* Shifted cells read as "not now" before the amount is read at all (4.2,
+   4.4). Same visual language as the normal window's rows, tightened to the
+   bar: the tint is a spread shadow and the ring an outline, so neither takes
+   any space and nothing moves when the shift starts. */
+.mini-bar__clock--shifted {
+  border-radius: 6px;
+  background: var(--empty);
+  box-shadow: 0 0 0 3px var(--empty);
+  outline: 2px dashed var(--badge);
+  outline-offset: 3px;
 }
 
 /* Takes the width left over by the fixed-size controls, and is the only part
@@ -611,6 +828,37 @@ body {
 .segmented__option--active {
   background: var(--primary);
   color: var(--primary-text);
+}
+
+/* The app's only native select. Sized and bordered like the pill controls on
+   the neighbouring settings rows, and painted from the theme tokens so it
+   follows all five themes. The dropdown list is drawn by the platform, so the
+   options carry the card colors too — otherwise the dark theme opens a white
+   popup. */
+.tz-select {
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 6px 8px 6px 14px;
+  max-width: 60%;
+  cursor: pointer;
+}
+
+.tz-select option,
+.tz-select optgroup {
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* The default focus ring is nearly invisible on the dark theme's card, so
+   draw it in the theme's ink, as the mini bar already does. */
+.tz-select:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .update__btn {

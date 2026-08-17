@@ -47,3 +47,5 @@ so a packaged release never defines it.
 - The scripts wait for `document.fonts.ready` before shooting; the bundled Zen
   Maru Gothic loads asynchronously and a capture taken too early shows the
   fallback font
+- `lib.mjs` is shared with [ui-checks](../ui-checks/README.md), which drives the
+  same built app to assert about layout instead of capturing it

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { applySettingsUpdate, detectLanguage, sanitizeSettings } from '../../src/shared/settings'
+import {
+  applySettingsUpdate,
+  asSecondaryTimeZone,
+  detectLanguage,
+  sanitizeSettings
+} from '../../src/shared/settings'
 import { DEFAULT_SETTINGS, type Settings } from '../../src/shared/types'
 
 const current: Settings = {
@@ -15,7 +20,8 @@ const current: Settings = {
   trayIcon: 'tomato',
   timeDisplay: 'elapsed',
   clockMode: true,
-  clockFormat: 'hhmmss'
+  clockFormat: 'hhmmss',
+  secondaryTimeZone: 'America/New_York'
 }
 
 describe('sanitizeSettings', () => {
@@ -149,6 +155,42 @@ describe('sanitizeSettings', () => {
     expect(result.theme).toBe('melonSoda')
   })
 
+  it('accepts a curated comparison zone', () => {
+    expect(sanitizeSettings({ secondaryTimeZone: 'Asia/Tokyo' }).secondaryTimeZone).toBe(
+      'Asia/Tokyo'
+    )
+    expect(sanitizeSettings({ secondaryTimeZone: 'UTC' }).secondaryTimeZone).toBe('UTC')
+  })
+
+  it('round-trips a stored comparison zone unchanged', () => {
+    const stored: Settings = { ...current, secondaryTimeZone: 'Europe/London' }
+    expect(sanitizeSettings(stored)).toEqual(stored)
+  })
+
+  it('accepts null as the explicit "not set" choice instead of falling back', () => {
+    expect(sanitizeSettings({ secondaryTimeZone: null }, current).secondaryTimeZone).toBeNull()
+  })
+
+  it('falls back to the base comparison zone on invalid values', () => {
+    const base = current.secondaryTimeZone
+    expect(sanitizeSettings({ secondaryTimeZone: 'nowhere' }, current).secondaryTimeZone).toBe(base)
+    expect(sanitizeSettings({ secondaryTimeZone: 42 }, current).secondaryTimeZone).toBe(base)
+    expect(sanitizeSettings({ secondaryTimeZone: {} }, current).secondaryTimeZone).toBe(base)
+    // Valid IANA, but absent from the catalog: no control could select it back.
+    expect(sanitizeSettings({ secondaryTimeZone: 'Europe/Rome' }, current).secondaryTimeZone).toBe(
+      base
+    )
+  })
+
+  it('leaves the comparison zone unset when the field is missing (pre-world-clock file)', () => {
+    const result = sanitizeSettings({ workMinutes: 30, theme: 'melonSoda' })
+    expect(DEFAULT_SETTINGS.secondaryTimeZone).toBeNull()
+    expect(result.secondaryTimeZone).toBeNull()
+    // The missing-field fallback must not cost the settings that were there.
+    expect(result.workMinutes).toBe(30)
+    expect(result.theme).toBe('melonSoda')
+  })
+
   it('accepts an in-range sessions per cycle', () => {
     expect(sanitizeSettings({ sessionsPerCycle: 1 }).sessionsPerCycle).toBe(1)
     expect(sanitizeSettings({ sessionsPerCycle: 10 }).sessionsPerCycle).toBe(10)
@@ -258,6 +300,22 @@ describe('applySettingsUpdate', () => {
     expect(applySettingsUpdate(current, { clockFormat: 'seconds' }).clockFormat).toBe('hhmmss')
   })
 
+  it('switches the comparison zone and keeps other fields', () => {
+    const result = applySettingsUpdate(current, { secondaryTimeZone: 'Europe/Paris' })
+    expect(result).toEqual({ ...current, secondaryTimeZone: 'Europe/Paris' })
+  })
+
+  it('clears the comparison zone when the patch is null', () => {
+    // The "not set" choice must reach the store, not be read as "keep the current zone".
+    const result = applySettingsUpdate(current, { secondaryTimeZone: null })
+    expect(result).toEqual({ ...current, secondaryTimeZone: null })
+  })
+
+  it('keeps the current comparison zone on invalid patch values', () => {
+    const patched = applySettingsUpdate(current, { secondaryTimeZone: 'Europe/Rome' })
+    expect(patched.secondaryTimeZone).toBe('America/New_York')
+  })
+
   it('changes the sessions per cycle and keeps other fields', () => {
     const result = applySettingsUpdate(current, { sessionsPerCycle: 2 })
     expect(result).toEqual({ ...current, sessionsPerCycle: 2 })
@@ -271,6 +329,26 @@ describe('applySettingsUpdate', () => {
   it('round-trips an updated theme through the sanitizer unchanged', () => {
     const updated = applySettingsUpdate(current, { theme: 'nightPudding' })
     expect(sanitizeSettings(updated)).toEqual(updated)
+  })
+})
+
+describe('asSecondaryTimeZone', () => {
+  it('accepts a curated zone', () => {
+    expect(asSecondaryTimeZone('Asia/Tokyo', null)).toBe('Asia/Tokyo')
+  })
+
+  it('accepts null as a valid "not set" rather than falling back', () => {
+    expect(asSecondaryTimeZone(null, 'Asia/Tokyo')).toBeNull()
+  })
+
+  it('falls back on an unknown string, a number, and an uncurated IANA zone', () => {
+    expect(asSecondaryTimeZone('nowhere', 'Asia/Tokyo')).toBe('Asia/Tokyo')
+    expect(asSecondaryTimeZone(42, 'Asia/Tokyo')).toBe('Asia/Tokyo')
+    expect(asSecondaryTimeZone('Europe/Rome', 'Asia/Tokyo')).toBe('Asia/Tokyo')
+  })
+
+  it('falls back on undefined, so a missing key is not read as "not set"', () => {
+    expect(asSecondaryTimeZone(undefined, 'Asia/Tokyo')).toBe('Asia/Tokyo')
   })
 })
 

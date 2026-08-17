@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { GITHUB_URL, THIRD_PARTY, type AboutInfo } from '../../shared/about'
 import { t, type MessageKey } from '../../shared/i18n'
+import { TimezoneSelect } from '../components/TimezoneSelect'
 import {
   SETTINGS_LIMITS,
   type Language,
@@ -368,6 +369,15 @@ export function SettingsView({
               {t(language, 'clockFormat.hhmmss')}
             </button>
           </div>
+        </div>
+
+        <div className="settings__row">
+          <span className="settings__label">{t(language, 'settings.secondaryTimeZone')}</span>
+          <TimezoneSelect
+            language={language}
+            value={settings.secondaryTimeZone}
+            onSelect={(zone) => onUpdate({ secondaryTimeZone: zone })}
+          />
         </div>
       </div>
 
