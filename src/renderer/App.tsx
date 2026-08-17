@@ -221,15 +221,19 @@ export function App(): React.JSX.Element | null {
   // window, and the bar fits the old size just fine in the meantime.
   const showMiniBar = miniMode || windowIsMiniSized
 
-  // Mini mode draws no title bar, so Escape stands in for its close button.
-  // Only bound there: the normal view has the button, and a global binding
-  // would swallow the Escape that cancels an IME conversion in the settings
-  // form.
+  // Mini mode draws no title bar, so Escape stands in for the expand button
+  // and returns to the normal window. It reads as backing out of the bar
+  // rather than as dismissing the app, and the window can still be put away
+  // from the tray or from the normal view's close button.
+  //
+  // Only bound in mini mode: the normal view has the buttons, and a global
+  // binding would swallow the Escape that cancels an IME conversion in the
+  // settings form.
   useEffect(() => {
     if (!showMiniBar) return
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape' && !event.isComposing && !event.defaultPrevented) {
-        void window.kizami.hideWindow()
+        void window.kizami.updateSettings({ miniMode: false }).then(setSettings)
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -237,7 +241,8 @@ export function App(): React.JSX.Element | null {
   }, [showMiniBar])
 
   // Mini mode is a single bar with no title bar: the bar itself is the drag
-  // handle, and the window is dismissed with Escape or the tray icon.
+  // handle, Escape leaves the bar for the normal window, and the tray icon is
+  // what puts the window away.
   if (showMiniBar) {
     return (
       <div className="app app--mini">

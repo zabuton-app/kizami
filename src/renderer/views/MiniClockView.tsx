@@ -26,7 +26,7 @@ interface MiniClockViewProps {
 
 /**
  * Clock mode's mini bar: the clock rows, the day-progress blocks, the date and
- * the expand button — no timer controls. Escape-to-hide and dragging are
+ * the expand button — no timer controls. Escape-to-expand and dragging are
  * handled by App/.app--mini, same as the timer bar.
  *
  * The bar is 380x58 at zoom 1, so a second zone has no room beside the first.
@@ -140,7 +140,7 @@ export function MiniClockView({
           if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
           // Stop the arrow keys from also scrolling the window behind them.
           // Only these two are consumed, so App's Escape binding — which skips
-          // an already-handled event — still hides the window.
+          // an already-handled event — still leaves the bar.
           event.preventDefault()
           shift.onKeyShift(event.key === 'ArrowUp' ? 1 : -1)
         }}
