@@ -105,5 +105,17 @@ export const en: Record<keyof typeof ja, string> = {
   'timezone.honolulu': 'Honolulu',
   'timezone.utc': 'UTC',
   'clock.home': 'Home',
-  'clock.hourUnit': 'h'
+  'clock.hourUnit': 'h',
+  'clockTimer.preset.5m': '5 min',
+  'clockTimer.preset.10m': '10 min',
+  'clockTimer.preset.15m': '15 min',
+  'clockTimer.preset.30m': '30 min',
+  'clockTimer.preset.60m': '60 min',
+  'clockTimer.startLabel': 'Set a timer',
+  'clockTimer.remainingLabel': 'Timer remaining',
+  'clockTimer.cancel': 'Cancel',
+  'clockTimer.done': "Time's up!",
+  'clockTimer.dismiss': 'OK',
+  'notification.clockTimerDone.title': "Time's up!",
+  'notification.clockTimerDone.body': 'Your timer has finished'
 }

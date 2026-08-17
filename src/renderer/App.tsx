@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { SHIFT_RESET_MS, wrapShiftHours } from '../shared/clock'
+import type { ClockTimerPresetId, ClockTimerSnapshot } from '../shared/clock-timer'
 import { detectLanguage } from '../shared/settings'
 import { DEFAULT_THEME, THEMES, type ThemeId } from '../shared/themes'
 import type { SecondaryTimeZone } from '../shared/timezones'
@@ -132,6 +133,9 @@ export function App(): React.JSX.Element | null {
   // never written to settings and never crosses IPC, which is what makes a
   // restart start unshifted and leaves the timer alone (3.9, 5.4, 5.5).
   const [shift, setShift] = useState<ShiftState>(NO_SHIFT)
+  // The countdown lives in the main process; this is only its latest
+  // display snapshot, so hiding or swapping the window never touches it.
+  const [clockTimer, setClockTimer] = useState<ClockTimerSnapshot | null>(null)
 
   useEffect(() => {
     void window.kizami.getSnapshot().then(setSnapshot)
@@ -139,15 +143,23 @@ export function App(): React.JSX.Element | null {
     // The startup check may land before or after this mounts, so read the
     // current verdict and also subscribe for a later one.
     void window.kizami.getUpdateStatus().then(setUpdateStatus)
+    void window.kizami.getClockTimer().then(setClockTimer)
     const offSnapshot = window.kizami.onSnapshot(setSnapshot)
     const offSettings = window.kizami.onSettingsChanged(setSettings)
     const offUpdate = window.kizami.onUpdateChanged(setUpdateStatus)
+    const offClockTimer = window.kizami.onClockTimerSnapshot(setClockTimer)
     return () => {
       offSnapshot()
       offSettings()
       offUpdate()
+      offClockTimer()
     }
   }, [])
+
+  const startClockTimer = (preset: ClockTimerPresetId): void =>
+    void window.kizami.startClockTimer(preset).then(setClockTimer)
+  const cancelClockTimer = (): void => void window.kizami.cancelClockTimer().then(setClockTimer)
+  const dismissClockTimer = (): void => void window.kizami.dismissClockTimer().then(setClockTimer)
 
   const language: Language =
     settings?.language ?? snapshot?.language ?? detectLanguage(navigator.language)
@@ -251,6 +263,7 @@ export function App(): React.JSX.Element | null {
             clockFormat={clockFormat}
             language={language}
             secondaryTimeZone={secondaryTimeZone}
+            clockTimer={clockTimer}
             shift={{
               shiftHours: shift.hours,
               onWheelShift: (deltaY, deltaMode) =>
@@ -310,6 +323,10 @@ export function App(): React.JSX.Element | null {
                 sessionsPerCycle={sessionsPerCycle}
                 clockFormat={clockFormat}
                 secondaryTimeZone={secondaryTimeZone}
+                clockTimer={clockTimer}
+                onStartClockTimer={startClockTimer}
+                onCancelClockTimer={cancelClockTimer}
+                onDismissClockTimer={dismissClockTimer}
                 shift={{
                   shiftHours: shift.hours,
                   onWheelShift: (deltaY, deltaMode) =>

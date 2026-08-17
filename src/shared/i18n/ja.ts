@@ -103,5 +103,17 @@ export const ja = {
   'timezone.honolulu': 'ホノルル',
   'timezone.utc': 'UTC',
   'clock.home': 'ほーむ',
-  'clock.hourUnit': 'h'
+  'clock.hourUnit': 'h',
+  'clockTimer.preset.5m': '5分',
+  'clockTimer.preset.10m': '10分',
+  'clockTimer.preset.15m': '15分',
+  'clockTimer.preset.30m': '30分',
+  'clockTimer.preset.60m': '60分',
+  'clockTimer.startLabel': 'タイマーをかける',
+  'clockTimer.remainingLabel': 'タイマーののこり',
+  'clockTimer.cancel': 'とりけす',
+  'clockTimer.done': 'じかんだよ！',
+  'clockTimer.dismiss': 'OK',
+  'notification.clockTimerDone.title': 'タイマーおわり！',
+  'notification.clockTimerDone.body': 'セットした時間になったよ'
 } as const

@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserWindow } from 'electron'
+import { ClockTimerEngine } from '../../src/main/clock-timer-engine'
 import { registerIpc } from '../../src/main/ipc'
 import type { SettingsStore } from '../../src/main/settings-store'
 import { TimerEngine } from '../../src/main/timer-engine'
@@ -77,7 +78,7 @@ function createFakePopup(
 
 function startEngineWith(popup: BrowserWindow): TimerEngine {
   const engine = new TimerEngine(() => ({ ...DEFAULT_SETTINGS }))
-  registerIpc(engine, {} as SettingsStore, {} as Updater, popup)
+  registerIpc(engine, new ClockTimerEngine(), {} as SettingsStore, {} as Updater, popup)
   engine.start()
   return engine
 }

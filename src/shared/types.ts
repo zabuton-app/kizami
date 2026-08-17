@@ -1,4 +1,5 @@
 import type { AboutInfo } from './about'
+import type { ClockTimerPresetId, ClockTimerSnapshot } from './clock-timer'
 import { DEFAULT_THEME, type ThemeId } from './themes'
 import type { SecondaryTimeZone } from './timezones'
 
@@ -185,7 +186,12 @@ export const IPC = {
   updateChanged: 'update:changed',
   shellOpenExternal: 'shell:openExternal',
   aboutInfo: 'about:info',
-  aboutOpenUrl: 'about:openUrl'
+  aboutOpenUrl: 'about:openUrl',
+  clockTimerGetSnapshot: 'clockTimer:getSnapshot',
+  clockTimerStart: 'clockTimer:start',
+  clockTimerCancel: 'clockTimer:cancel',
+  clockTimerDismiss: 'clockTimer:dismiss',
+  clockTimerSnapshot: 'clockTimer:snapshot'
 } as const
 
 /** API surface exposed to the renderer via the preload bridge. */
@@ -208,4 +214,10 @@ export interface KizamiApi {
   aboutInfo(): Promise<AboutInfo>
   /** Opens a URL from the fixed About allow-list (`ABOUT_URLS`); anything else is ignored. */
   openAboutUrl(url: string): Promise<void>
+  getClockTimer(): Promise<ClockTimerSnapshot>
+  /** An id outside the preset list is ignored and the current snapshot returned. */
+  startClockTimer(preset: ClockTimerPresetId): Promise<ClockTimerSnapshot>
+  cancelClockTimer(): Promise<ClockTimerSnapshot>
+  dismissClockTimer(): Promise<ClockTimerSnapshot>
+  onClockTimerSnapshot(callback: (snapshot: ClockTimerSnapshot) => void): () => void
 }

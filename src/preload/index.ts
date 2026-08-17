@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import type { ClockTimerSnapshot } from '../shared/clock-timer'
 import {
   IPC,
   type Settings,
@@ -29,7 +30,13 @@ const api: KizamiApi = {
   openReleasePage: (url) => ipcRenderer.invoke(IPC.shellOpenExternal, url),
   onUpdateChanged: (callback) => subscribe<UpdateStatus>(IPC.updateChanged, callback),
   aboutInfo: () => ipcRenderer.invoke(IPC.aboutInfo),
-  openAboutUrl: (url) => ipcRenderer.invoke(IPC.aboutOpenUrl, url)
+  openAboutUrl: (url) => ipcRenderer.invoke(IPC.aboutOpenUrl, url),
+  getClockTimer: () => ipcRenderer.invoke(IPC.clockTimerGetSnapshot),
+  startClockTimer: (preset) => ipcRenderer.invoke(IPC.clockTimerStart, preset),
+  cancelClockTimer: () => ipcRenderer.invoke(IPC.clockTimerCancel),
+  dismissClockTimer: () => ipcRenderer.invoke(IPC.clockTimerDismiss),
+  onClockTimerSnapshot: (callback) =>
+    subscribe<ClockTimerSnapshot>(IPC.clockTimerSnapshot, callback)
 }
 
 contextBridge.exposeInMainWorld('kizami', api)

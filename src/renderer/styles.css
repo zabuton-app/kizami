@@ -344,6 +344,135 @@ body {
   gap: 12px;
 }
 
+/* --- Clock-mode countdown timer --- */
+
+/* Sits where the timer view keeps its start/skip buttons, and like them it is
+   a single row in every state — the height floor (WINDOW_MIN_CONTENT_HEIGHT)
+   was measured against that one-row layout, so a second row would push the
+   theme picker off screen at the minimum window height. The wrap is only a
+   safety net for a translation that outgrows the sizes below. */
+.ctimer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  /* Stretch against the centering parent (.timer), or the fluid preset
+     chips would divide a shrink-to-fit width instead of the card width. */
+  align-self: stretch;
+}
+
+.ctimer__presets {
+  display: flex;
+  gap: 6px;
+}
+
+.ctimer__presets .btn {
+  /* Sized so all five fit one row even with the wider English labels
+     ("60 min"). */
+  font-size: 12px;
+  padding: 8px 9px;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+/* With a readout or the done badge beside them the presets compress to bare
+   minute counts. The chips start from a fixed preferred width and *shrink*
+   when the window narrows — growing them instead would swallow the row's
+   leftover space and drag the group out of center. Wrapping is disabled
+   here because a wrapping container places items by their preferred size
+   (it would wrap before ever shrinking), and a second line is exactly what
+   pushes the theme picker off the height floor. */
+.ctimer--active {
+  flex-wrap: nowrap;
+}
+
+.ctimer--active .ctimer__presets {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.ctimer--active .ctimer__presets .btn {
+  /* A definite width rather than a flex-basis: the preset group's own
+     intrinsic width is computed from its items' widths, and a basis would
+     be ignored there — collapsing the group to its text width. */
+  width: 38px;
+  flex-shrink: 1;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+.ctimer__readout {
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -1px;
+  /* Equal-width digits, and a floor wide enough for h:mm:ss, so neither the
+     seconds counting down nor the hour digit appearing shifts the row. */
+  font-variant-numeric: tabular-nums;
+  min-width: 74px;
+  text-align: center;
+}
+
+/* Round icon buttons, sized to the mini bar's expand button family. The
+   dismiss shares the cancel's 34px footprint on purpose: it keeps the
+   completed row no wider than the running one. */
+.ctimer__cancel,
+.ctimer__dismiss {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.ctimer__dismiss {
+  background: var(--primary);
+  color: var(--primary-text);
+}
+
+.ctimer__done {
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* The live region stays mounted while empty (see ClockView); out of flow it
+   adds neither height nor a flex gap to the row. */
+.ctimer__done:empty {
+  position: absolute;
+}
+
+/* A shrunken window shrinks the fixed-width pieces too, so the fluid preset
+   chips keep enough room for their digits down to the width floor. */
+@media (max-width: 344px) {
+  .ctimer {
+    gap: 6px;
+  }
+
+  .ctimer__readout {
+    font-size: 16px;
+    min-width: 0;
+  }
+
+  .ctimer__done {
+    font-size: 13px;
+  }
+
+  .ctimer__presets {
+    gap: 4px;
+  }
+
+  .ctimer__presets .btn {
+    font-size: 11px;
+  }
+}
+
 .timer__task {
   font-weight: 700;
   font-size: 12px;
@@ -511,6 +640,27 @@ body {
   max-width: 12px;
   height: 8px;
   border-radius: 3px;
+}
+
+/* The running clock-mode countdown, read-only in the bar. Styled like the
+   date beside it but in ink, so a glance separates "a timer is running"
+   from the always-there calendar. */
+.mini-bar__ctimer {
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--ink);
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  /* Same optical correction as the date (Zen Maru Gothic sits low). */
+  transform: translateY(-2px);
+}
+
+/* The completion badge doubles as the live region, so it stays mounted while
+   empty (see MiniClockView); out of flow it neither takes width from the
+   day-progress blocks nor contributes a flex gap. */
+.mini-bar__ctimer--done:empty {
+  position: absolute;
 }
 
 /* Clock mode's date sits where the timer bar keeps its control buttons. */
