@@ -102,6 +102,6 @@ export const ja = {
   'timezone.auckland': 'オークランド',
   'timezone.honolulu': 'ホノルル',
   'timezone.utc': 'UTC',
-  'clock.home': 'げんざい地',
+  'clock.home': 'ほーむ',
   'clock.hourUnit': 'h'
 } as const
