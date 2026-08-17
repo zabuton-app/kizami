@@ -24,3 +24,14 @@ export function notifyTransition(transition: PhaseTransition, settings: Settings
     silent: false
   }).show()
 }
+
+/** Show a desktop notification for a finished clock-mode timer. */
+export function notifyClockTimerDone(settings: Settings): void {
+  if (!Notification.isSupported()) return
+  new Notification({
+    title: t(settings.language, 'notification.clockTimerDone.title'),
+    body: t(settings.language, 'notification.clockTimerDone.body'),
+    icon: appIcon,
+    silent: false
+  }).show()
+}

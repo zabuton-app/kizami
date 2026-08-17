@@ -344,6 +344,56 @@ body {
   gap: 12px;
 }
 
+/* --- Clock-mode countdown timer --- */
+
+/* Sits where the timer view keeps its start/skip buttons: a preset row, with
+   a readout row stacked above it while a countdown runs. */
+.ctimer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctimer__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ctimer__presets {
+  display: flex;
+  /* Five presets share the row, so they run compact and are allowed to wrap
+     rather than clip when a translation comes out wider. */
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ctimer__presets .btn {
+  /* Sized so all five fit one row even with the wider English labels
+     ("60 min"); the wrap above stays as a safety net only. */
+  font-size: 12px;
+  padding: 8px 9px;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.ctimer__readout {
+  font-weight: 900;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -1px;
+  /* Same as the clocks: equal-width digits keep the cancel button beside the
+     readout from shifting as the seconds count down. */
+  font-variant-numeric: tabular-nums;
+}
+
+.ctimer__done {
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 1;
+}
+
 .timer__task {
   font-weight: 700;
   font-size: 12px;
@@ -511,6 +561,20 @@ body {
   max-width: 12px;
   height: 8px;
   border-radius: 3px;
+}
+
+/* The running clock-mode countdown, read-only in the bar. Styled like the
+   date beside it but in ink, so a glance separates "a timer is running"
+   from the always-there calendar. */
+.mini-bar__ctimer {
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--ink);
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  /* Same optical correction as the date (Zen Maru Gothic sits low). */
+  transform: translateY(-2px);
 }
 
 /* Clock mode's date sits where the timer bar keeps its control buttons. */

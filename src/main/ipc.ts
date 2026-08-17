@@ -1,8 +1,10 @@
 import { app, ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { ABOUT_URLS, type AboutInfo } from '../shared/about'
+import { isClockTimerPresetId } from '../shared/clock-timer'
 import { IPC } from '../shared/types'
 import { isAllowedReleaseUrl, msStoreProductUrl } from '../shared/update-state'
 import { isComparableVersion } from '../shared/version'
+import type { ClockTimerEngine } from './clock-timer-engine'
 import { APP_RENDERER_ORIGIN, applyMiniMode } from './popup-window'
 import type { SettingsStore } from './settings-store'
 import type { TimerEngine } from './timer-engine'
@@ -67,6 +69,7 @@ function isAllowedExternalReleaseUrl(url: unknown): url is string {
  */
 export function registerIpc(
   engine: TimerEngine,
+  clockTimer: ClockTimerEngine,
   settingsStore: SettingsStore,
   updater: Updater,
   popup: BrowserWindow
@@ -82,6 +85,29 @@ export function registerIpc(
   ipcMain.handle(IPC.timerSkip, (event) => {
     assertTrustedSender(event, popup)
     return engine.skip()
+  })
+
+  ipcMain.handle(IPC.clockTimerGetSnapshot, (event) => {
+    assertTrustedSender(event, popup)
+    return clockTimer.snapshot()
+  })
+  // The preset id crosses from the renderer, so it is validated here against
+  // the shared preset list; anything unknown is a no-op, mirroring how
+  // update:skip treats a bad version string.
+  ipcMain.handle(IPC.clockTimerStart, (event, presetId: unknown) => {
+    assertTrustedSender(event, popup)
+    if (!isClockTimerPresetId(presetId)) {
+      return clockTimer.snapshot()
+    }
+    return clockTimer.start(presetId)
+  })
+  ipcMain.handle(IPC.clockTimerCancel, (event) => {
+    assertTrustedSender(event, popup)
+    return clockTimer.cancel()
+  })
+  ipcMain.handle(IPC.clockTimerDismiss, (event) => {
+    assertTrustedSender(event, popup)
+    return clockTimer.dismiss()
   })
 
   ipcMain.handle(IPC.settingsGet, (event) => {
@@ -181,8 +207,17 @@ export function registerIpc(
     }
   })
 
+  clockTimer.on('update', () => {
+    // Same guard as the pomodoro push: the window may be destroyed mid-quit,
+    // and a hidden window re-syncs on 'show' instead.
+    if (!popup.isDestroyed() && popup.isVisible()) {
+      popup.webContents.send(IPC.clockTimerSnapshot, clockTimer.snapshot())
+    }
+  })
+
   // Re-sync immediately when the popup becomes visible again.
   popup.on('show', () => {
     popup.webContents.send(IPC.timerSnapshot, engine.snapshot())
+    popup.webContents.send(IPC.clockTimerSnapshot, clockTimer.snapshot())
   })
 }

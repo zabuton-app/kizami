@@ -1,5 +1,11 @@
 import { Fragment, useEffect, useState } from 'react'
 import { buildClockRows, DAY_BLOCKS, DAY_MS, formatShiftLabel, msIntoDay } from '../../shared/clock'
+import {
+  CLOCK_TIMER_PRESETS,
+  formatClockTimerTime,
+  type ClockTimerPresetId,
+  type ClockTimerSnapshot
+} from '../../shared/clock-timer'
 import { t } from '../../shared/i18n'
 import type { ThemeId } from '../../shared/themes'
 import { filledBlocks } from '../../shared/timer-logic'
@@ -17,17 +23,23 @@ interface ClockViewProps {
   sessionsPerCycle: number
   clockFormat: ClockFormat
   secondaryTimeZone: SecondaryTimeZone
+  clockTimer: ClockTimerSnapshot | null
   shift: ClockShiftProps
   onSelectTheme: (theme: ThemeId) => void
+  onStartClockTimer: (preset: ClockTimerPresetId) => void
+  onCancelClockTimer: () => void
+  onDismissClockTimer: () => void
 }
 
 /**
  * Clock mode's normal-window view. It mirrors the timer view's layout — the
- * header, card, buttons, task line and theme picker all stay in place, with
- * the timer controls disabled but the theme picker still live — while the
- * card shows the time of day and how much of the 24-hour day has passed.
- * The pomodoro timer keeps running untouched in the main process; the
- * snapshot is only read for the labels the timer view would show.
+ * header, card, controls, task line and theme picker all stay in place —
+ * while the card shows the time of day and how much of the 24-hour day has
+ * passed. Where the timer view has start/skip, clock mode offers its own
+ * countdown timer: preset buttons, and a remaining readout with a cancel
+ * while one runs. The pomodoro timer keeps running untouched in the main
+ * process; the snapshot is only read for the labels the timer view would
+ * show.
  */
 export function ClockView({
   snapshot,
@@ -36,8 +48,12 @@ export function ClockView({
   sessionsPerCycle,
   clockFormat,
   secondaryTimeZone,
+  clockTimer,
   shift,
-  onSelectTheme
+  onSelectTheme,
+  onStartClockTimer,
+  onCancelClockTimer,
+  onDismissClockTimer
 }: ClockViewProps): React.JSX.Element {
   // Deliberately named for what it is: the *real* current time. It is the only
   // instant this view holds, and the day-progress blocks below must keep using
@@ -118,13 +134,11 @@ export function ClockView({
     DAY_BLOCKS
   )
 
-  const toggleLabel = snapshot.running
-    ? t(language, 'timer.pause')
-    : snapshot.fresh
-      ? t(language, 'timer.start')
-      : t(language, 'timer.resume')
-
   const taskName = snapshot.taskName || t(language, 'timer.defaultTask')
+
+  // Until the initial fetch lands the timer is shown as idle; the snapshot
+  // subscription corrects this within the same frame in practice.
+  const timerStatus = clockTimer?.status ?? 'idle'
 
   const rowsClass = [
     'timer__rows',
@@ -201,13 +215,56 @@ export function ClockView({
           ))}
         </div>
       </div>
-      <div className="timer__buttons">
-        <button type="button" className="btn btn--primary" disabled>
-          {toggleLabel}
-        </button>
-        <button type="button" className="btn btn--secondary" disabled>
-          {t(language, 'timer.skip')}
-        </button>
+      <div className="ctimer">
+        {timerStatus === 'running' && clockTimer !== null && (
+          <div className="ctimer__row">
+            {/* Plain text rather than a live region: it changes every second,
+                and announcing that would talk over everything else. The
+                accessible name carries what the digits mean. */}
+            <span
+              className="ctimer__readout"
+              aria-label={`${t(language, 'clockTimer.remainingLabel')} ${formatClockTimerTime(
+                clockTimer.remainingSec
+              )}`}
+            >
+              {formatClockTimerTime(clockTimer.remainingSec)}
+            </span>
+            <button type="button" className="btn btn--secondary" onClick={onCancelClockTimer}>
+              {t(language, 'clockTimer.cancel')}
+            </button>
+          </div>
+        )}
+        {timerStatus === 'completed' && (
+          <div className="ctimer__row">
+            {/* A status region: completion happens once, so announcing it is
+                exactly what a screen-reader user needs in place of glancing
+                at the window. */}
+            <span className="ctimer__done" role="status">
+              {t(language, 'clockTimer.done')}
+            </span>
+            <button type="button" className="btn btn--primary" onClick={onDismissClockTimer}>
+              {t(language, 'clockTimer.dismiss')}
+            </button>
+          </div>
+        )}
+        {/* The presets stay visible while a timer runs so picking one simply
+            replaces it — the main process swaps the countdown atomically. */}
+        <div
+          className="ctimer__presets"
+          role="group"
+          aria-label={t(language, 'clockTimer.startLabel')}
+        >
+          {CLOCK_TIMER_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className="btn btn--secondary"
+              onClick={() => onStartClockTimer(preset.id)}
+            >
+              {t(language, `clockTimer.preset.${preset.id}`)}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="timer__task">
         {t(language, 'timer.taskLabel')}: {taskName}

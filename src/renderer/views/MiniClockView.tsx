@@ -8,6 +8,7 @@ import {
   msIntoDay,
   WEEKDAY_KEYS
 } from '../../shared/clock'
+import { formatClockTimerTime, type ClockTimerSnapshot } from '../../shared/clock-timer'
 import { t } from '../../shared/i18n'
 import { filledBlocks } from '../../shared/timer-logic'
 import { TIMEZONE_OPTIONS, type SecondaryTimeZone } from '../../shared/timezones'
@@ -20,6 +21,7 @@ interface MiniClockViewProps {
   clockFormat: ClockFormat
   language: Language
   secondaryTimeZone: SecondaryTimeZone
+  clockTimer: ClockTimerSnapshot | null
   shift: ClockShiftProps
   onExitMini: () => void
 }
@@ -39,6 +41,7 @@ export function MiniClockView({
   clockFormat,
   language,
   secondaryTimeZone,
+  clockTimer,
   shift,
   onExitMini
 }: MiniClockViewProps): React.JSX.Element {
@@ -179,6 +182,25 @@ export function MiniClockView({
           />
         ))}
       </div>
+      {/* The running clock-mode timer, mirrored read-only: the bar follows the
+          established convention of reflecting state without offering controls
+          (starting and cancelling live in the normal window). Rendered only
+          while a timer exists, so the idle bar is unchanged. */}
+      {clockTimer !== null && clockTimer.status === 'running' && (
+        <span
+          className="mini-bar__ctimer"
+          aria-label={`${t(language, 'clockTimer.remainingLabel')} ${formatClockTimerTime(
+            clockTimer.remainingSec
+          )}`}
+        >
+          {formatClockTimerTime(clockTimer.remainingSec)}
+        </span>
+      )}
+      {clockTimer !== null && clockTimer.status === 'completed' && (
+        <span className="mini-bar__ctimer mini-bar__ctimer--done" role="status">
+          {t(language, 'clockTimer.done')}
+        </span>
+      )}
       <span className="mini-bar__date">
         {formatClockDate(
           realNow.getMonth() + 1,

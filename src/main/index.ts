@@ -1,7 +1,8 @@
 import { app } from 'electron'
 import { IPC } from '../shared/types'
+import { ClockTimerEngine } from './clock-timer-engine'
 import { registerIpc } from './ipc'
-import { notifyTransition } from './notifications'
+import { notifyClockTimerDone, notifyTransition } from './notifications'
 import {
   applyMiniMode,
   createPopupWindow,
@@ -36,6 +37,7 @@ if (!hasLock) {
 
     const settingsStore = new SettingsStore()
     const engine = new TimerEngine(() => settingsStore.get())
+    const clockTimer = new ClockTimerEngine()
     const updater = new Updater(new UpdateStore())
     installAppProtocol()
     const popup = createPopupWindow()
@@ -61,9 +63,12 @@ if (!hasLock) {
     // `unref()` only lets the process exit; it does not cancel the interval.
     // This wiring owns the app lifecycle and has no unit test; the guards it
     // backs up are covered by tests/unit/shutdown-guards.test.ts.
-    app.once('before-quit', () => engine.stop())
+    app.once('before-quit', () => {
+      engine.stop()
+      clockTimer.stop()
+    })
 
-    registerIpc(engine, settingsStore, updater, popup)
+    registerIpc(engine, clockTimer, settingsStore, updater, popup)
 
     // Startup update check. Deliberately not awaited: a slow or unreachable
     // network must never delay startup, and any failure stays contained here so
@@ -84,6 +89,7 @@ if (!hasLock) {
 
     engine.on('update', refreshTray)
     engine.on('transition', (transition) => notifyTransition(transition, settingsStore.get()))
+    clockTimer.on('completed', () => notifyClockTimerDone(settingsStore.get()))
 
     refreshTray()
     engine.start()
