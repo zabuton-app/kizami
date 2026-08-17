@@ -107,6 +107,33 @@ function partValue(parts: readonly Intl.DateTimeFormatPart[], type: string): num
 }
 
 /**
+ * A second formatter per zone, this one carrying the date as well. Kept apart
+ * from the time-only one above because the clock reads that one every second
+ * and has no use for the date; only the offset does, and only because a date
+ * is what tells a zone a day away from one in step with home.
+ */
+const zoneDateFormatters = new Map<string, Intl.DateTimeFormat>()
+
+function zoneDateFormatter(zone: string): Intl.DateTimeFormat {
+  const cached = zoneDateFormatters.get(zone)
+  if (cached !== undefined) {
+    return cached
+  }
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+  zoneDateFormatters.set(zone, formatter)
+  return formatter
+}
+
+/**
  * The wall-clock time an instant shows in `zone`. The offset actually in
  * effect at that instant is applied, so daylight-saving transitions are
  * resolved by the platform's timezone data rather than by arithmetic here.
@@ -160,12 +187,62 @@ export function wrapShiftHours(value: number): number {
   return whole === 0 ? 0 : whole
 }
 
+/**
+ * Minutes a zone runs ahead of UTC at an instant. Built from the zone's own
+ * calendar reading rather than parsed out of a formatted offset string: the
+ * date has to come along, or a zone a day away from UTC would be
+ * indistinguishable from one that matches it.
+ */
+function zoneUtcOffsetMinutes(instant: Date, zone: string): number {
+  const parts = zoneDateFormatter(zone).formatToParts(instant)
+  const asUtc = Date.UTC(
+    partValue(parts, 'year'),
+    partValue(parts, 'month') - 1,
+    partValue(parts, 'day'),
+    partValue(parts, 'hour'),
+    partValue(parts, 'minute'),
+    partValue(parts, 'second')
+  )
+  // The formatter has no milliseconds, so drop them from the instant too or
+  // every offset would come out a fraction of a minute off.
+  return (asUtc - Math.floor(instant.getTime() / 1000) * 1000) / 60_000
+}
+
+/**
+ * Minutes the comparison zone runs ahead of (positive) or behind (negative)
+ * home at an instant — what the comparison row shows beside its time.
+ *
+ * Both sides are resolved to their offset from UTC and subtracted, rather than
+ * taking the difference of the two wall clocks. A wall-clock subtraction wraps
+ * at a day, so it cannot tell a zone exactly 24 hours away from one in step
+ * with home, and both are reachable: a machine at +14 with the catalog's -10
+ * is a full day apart.
+ */
+export function zoneOffsetMinutes(instant: Date, zone: string): number {
+  const home = -instant.getTimezoneOffset()
+  return zoneUtcOffsetMinutes(instant, zone) - home
+}
+
+/**
+ * A zone offset as the comparison row shows it: `-9:00`, `+3:45`, and `0:00`
+ * for a zone in step with home. The hours are not padded — this reads as a
+ * difference, not as a time — while the minutes are, so `-9:00` cannot be
+ * misread as nine and a bit.
+ */
+export function formatZoneOffset(offsetMinutes: number): string {
+  const sign = offsetMinutes > 0 ? '+' : offsetMinutes < 0 ? '-' : ''
+  const total = Math.abs(offsetMinutes)
+  return `${sign}${Math.floor(total / 60)}:${pad2(total % 60)}`
+}
+
 /** One line of the clock display: a time, and the place it belongs to. */
 export interface ClockRow {
   readonly key: 'home' | 'secondary'
   /** Null only when the home row is shown alone (2.3, 2.8). */
   readonly label: string | null
   readonly time: string
+  /** How far this row is from home; null on the home row, which is the datum. */
+  readonly offset: string | null
 }
 
 export interface ClockRowsInput {
@@ -196,16 +273,19 @@ export function buildClockRows(input: ClockRowsInput): readonly ClockRow[] {
   if (input.secondary === null) {
     // Alone, the home row has nothing to be told apart from, so it stays
     // unlabeled and 007's single-row display is unchanged (2.3, 2.8).
-    return [{ key: 'home', label: null, time: homeTime }]
+    return [{ key: 'home', label: null, time: homeTime, offset: null }]
   }
   const parts = zonedClockParts(instant, input.secondary.zone)
   return [
-    { key: 'home', label: input.homeLabel, time: homeTime },
+    { key: 'home', label: input.homeLabel, time: homeTime, offset: null },
     {
       key: 'secondary',
       label: input.secondary.label,
       // The same formatter as the home row, so one format choice covers both (2.4).
-      time: formatClock(parts.hours, parts.minutes, parts.seconds, input.format)
+      time: formatClock(parts.hours, parts.minutes, parts.seconds, input.format),
+      // Read at the displayed instant, so it follows the shift and either
+      // zone's daylight saving rather than describing only now (2.5).
+      offset: formatZoneOffset(zoneOffsetMinutes(instant, input.secondary.zone))
     }
   ]
 }

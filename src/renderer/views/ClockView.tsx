@@ -95,7 +95,16 @@ export function ClockView({
   // purpose — the time changes every second, and announcing that would make
   // the view unusable with a screen reader.
   const clockLabel = rows
-    .map((row) => (row.label === null ? row.time : `${row.label} ${row.time}`))
+    .map((row) => {
+      if (row.label === null) {
+        return row.time
+      }
+      // The offset is part of what the row says, so it belongs in the name a
+      // screen reader reads rather than being visual-only.
+      return row.offset === null
+        ? `${row.label} ${row.time}`
+        : `${row.label} ${row.time} ${row.offset}`
+    })
     .concat(shiftLabel === '' ? [] : [shiftLabel])
     .join(', ')
 
@@ -176,6 +185,10 @@ export function ClockView({
             <Fragment key={row.key}>
               {row.label !== null && <span className="timer__row-label">{row.label}</span>}
               <div className="timer__time">{row.time}</div>
+              {/* Rendered on both rows so the grid stays rectangular and the
+                  times keep lining up; the home row is the datum, so its cell
+                  is empty rather than reading "0:00" against itself. */}
+              {row.label !== null && <span className="timer__row-offset">{row.offset ?? ''}</span>}
             </Fragment>
           ))}
         </div>

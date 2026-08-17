@@ -8,11 +8,13 @@ import {
   formatShiftLabel,
   msIntoDay,
   SHIFT_HOURS_LIMIT,
+  formatZoneOffset,
   SHIFT_RESET_MS,
   shiftInstant,
   WEEKDAY_KEYS,
   wrapShiftHours,
-  zonedClockParts
+  zonedClockParts,
+  zoneOffsetMinutes
 } from '../../src/shared/clock'
 import { filledBlocks } from '../../src/shared/timer-logic'
 
@@ -554,7 +556,9 @@ describe('buildClockRows', () => {
   // The per-zone formatter cache is what keeps a once-a-second tick cheap.
   // Without this, deleting the cache lookup would leave the suite green.
   // Africa/Cairo is used nowhere else in this file, so the count is exact.
-  it('builds one formatter per comparison zone across ticks', () => {
+  // Two formatters per zone, not one: the time-only formatter the rows read
+  // every tick, and the dated one the offset needs. Both are built once.
+  it('builds its formatters once per comparison zone across ticks', () => {
     const real = Intl.DateTimeFormat
     let constructions = 0
     // A Proxy rather than a spy: Intl.DateTimeFormat has to stay constructible
@@ -575,7 +579,7 @@ describe('buildClockRows', () => {
           })
         )
       }
-      expect(constructions).toBe(1)
+      expect(constructions).toBe(2)
     } finally {
       Intl.DateTimeFormat = real
     }
@@ -589,5 +593,89 @@ describe('shift constants', () => {
 
   it('returns to the current time after 10 seconds (requirement 5.1)', () => {
     expect(SHIFT_RESET_MS).toBe(10_000)
+  })
+})
+
+// How far the comparison zone runs ahead of or behind home, which is what the
+// comparison row shows beside its time. Home is the machine's own zone, so
+// these fix TZ rather than depend on wherever the suite happens to run.
+describe('zoneOffsetMinutes', () => {
+  const withHome = <T>(zone: string, run: () => T): T => {
+    const before = process.env.TZ
+    process.env.TZ = zone
+    try {
+      return run()
+    } finally {
+      if (before === undefined) delete process.env.TZ
+      else process.env.TZ = before
+    }
+  }
+
+  it('reads a zone behind home as negative', () => {
+    withHome('Asia/Tokyo', () => {
+      expect(zoneOffsetMinutes(new Date('2026-08-15T03:00:00Z'), 'UTC')).toBe(-540)
+    })
+  })
+
+  it('reads a zone ahead of home as positive', () => {
+    withHome('UTC', () => {
+      expect(zoneOffsetMinutes(new Date('2026-08-15T03:00:00Z'), 'Asia/Tokyo')).toBe(540)
+    })
+  })
+
+  it('is zero for a zone that shares home offset', () => {
+    withHome('Asia/Tokyo', () => {
+      expect(zoneOffsetMinutes(new Date('2026-08-15T03:00:00Z'), 'Asia/Seoul')).toBe(0)
+    })
+  })
+
+  it('keeps the minutes of a zone that is not a whole hour from home', () => {
+    withHome('Asia/Tokyo', () => {
+      expect(zoneOffsetMinutes(new Date('2026-08-15T03:00:00Z'), 'Asia/Kolkata')).toBe(-210)
+    })
+  })
+
+  // The offset belongs to the displayed instant, not to now, so it has to
+  // follow the comparison zone across its own daylight-saving change (2.5).
+  it('follows the comparison zone across a daylight-saving change', () => {
+    withHome('Asia/Tokyo', () => {
+      const before = zoneOffsetMinutes(new Date('2026-03-08T06:59:00Z'), 'America/New_York')
+      const after = zoneOffsetMinutes(new Date('2026-03-08T07:00:00Z'), 'America/New_York')
+      expect(before).toBe(-840)
+      expect(after).toBe(-780)
+    })
+  })
+
+  // A wall-clock subtraction cannot tell -24h from 0, and both are reachable:
+  // home at +14 with the catalog's -10 is exactly a day apart.
+  it('tells a full day apart from no difference at all', () => {
+    withHome('Pacific/Kiritimati', () => {
+      expect(zoneOffsetMinutes(new Date('2026-08-15T03:00:00Z'), 'Pacific/Honolulu')).toBe(-1440)
+    })
+  })
+})
+
+describe('formatZoneOffset', () => {
+  it('signs a zone behind home', () => {
+    expect(formatZoneOffset(-540)).toBe('-9:00')
+  })
+
+  it('signs a zone ahead of home', () => {
+    expect(formatZoneOffset(540)).toBe('+9:00')
+  })
+
+  it('leaves no difference unsigned', () => {
+    expect(formatZoneOffset(0)).toBe('0:00')
+  })
+
+  it('zero-pads the minutes of a partial-hour offset', () => {
+    expect(formatZoneOffset(-210)).toBe('-3:30')
+    expect(formatZoneOffset(225)).toBe('+3:45')
+    expect(formatZoneOffset(-45)).toBe('-0:45')
+  })
+
+  it('does not zero-pad the hours', () => {
+    expect(formatZoneOffset(-60)).toBe('-1:00')
+    expect(formatZoneOffset(1440)).toBe('+24:00')
   })
 })

@@ -248,7 +248,10 @@ body {
    here, which is what leaves the single-row case alone. */
 .timer__rows--pair {
   display: grid;
-  grid-template-columns: auto auto;
+  /* Label, time, then how far the row is from home. The third column is empty
+     on the home row, which is the datum, but it is still a column so the two
+     times stay aligned and the block centres as a whole. */
+  grid-template-columns: auto auto auto;
   justify-content: center;
   align-items: baseline;
   column-gap: 12px;
@@ -265,6 +268,19 @@ body {
   color: var(--sub);
   text-align: right;
   white-space: nowrap;
+}
+
+/* How far the comparison row runs from home, beside its time. Sized and
+   coloured like the row label so the two read as annotations around the time
+   rather than as figures competing with it, and left-aligned so the sign
+   starts at the same place on every offset. */
+.timer__row-offset {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--sub);
+  text-align: left;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Shifted rows read as "not now" before the badge is read at all (4.2). The

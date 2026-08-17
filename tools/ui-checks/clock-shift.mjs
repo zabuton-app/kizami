@@ -107,7 +107,8 @@ const SURFACES = {
     area: '.timer__card--clock',
     shift: '.timer__shift',
     time: '.timer__time',
-    label: '.timer__row-label'
+    label: '.timer__row-label',
+    offset: '.timer__row-offset'
   },
   mini: {
     form: 'mini',
@@ -115,7 +116,9 @@ const SURFACES = {
     area: '.mini-bar__clock',
     shift: '.mini-bar__shift',
     time: '.mini-bar__time',
-    label: '.mini-bar__cell-label'
+    label: '.mini-bar__cell-label',
+    // The bar deliberately carries no offset; 2.9 is the normal window's.
+    offset: null
   }
 }
 
@@ -240,6 +243,10 @@ function readClock(page, surface) {
       // than in an element of its own.
       shiftOnLabelLine: badge !== null && badge.closest(selectors.label) !== null,
       times: [...area.querySelectorAll(selectors.time)].map((node) => node.textContent ?? ''),
+      offsets:
+        selectors.offset === null
+          ? null
+          : [...area.querySelectorAll(selectors.offset)].map((node) => node.textContent ?? ''),
       labels: [...area.querySelectorAll(selectors.label)].map((node) => {
         // The bar nests the badge inside the home label, so the label text has
         // to be taken without it.
@@ -298,6 +305,41 @@ async function expectShift(unit, page, surface, hours, requirement, timeout = SH
 }
 
 /** The two row-level truths every reading must satisfy (3.1, 3.2, 3.5). */
+/**
+ * Minutes `zone` runs ahead of this machine's zone at `instant`, unwrapped: a
+ * zone thirteen hours away reads as thirteen, not as eleven the other way.
+ * That is what the comparison row states, and it is deliberately not the same
+ * number as the wall-clock gap above, which wraps at half a day.
+ *
+ * Read from each side's GMT offset rather than by differencing calendars —
+ * a different route than the app takes, so the two cannot be wrong together.
+ */
+function trueOffsetMinutes(instant, zone) {
+  const gmt = (id) => {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: id,
+      timeZoneName: 'longOffset'
+    }).formatToParts(instant)
+    const text = parts.find((part) => part.type === 'timeZoneName')?.value ?? ''
+    const match = /GMT([+-])(\d{2}):(\d{2})/.exec(text)
+    // A zone sitting on GMT formats as a bare "GMT", which is an offset of 0.
+    return match === null
+      ? 0
+      : (match[1] === '-' ? -1 : 1) * (Number(match[2]) * 60 + Number(match[3]))
+  }
+  return gmt(zone) - gmt(Intl.DateTimeFormat().resolvedOptions().timeZone)
+}
+
+/**
+ * The offset as the comparison row should read it. Written out here rather
+ * than imported so the expectation stays independent of the code it checks.
+ */
+function offsetLabel(minutes) {
+  const sign = minutes > 0 ? '+' : minutes < 0 ? '-' : ''
+  const total = Math.abs(minutes)
+  return `${sign}${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+}
+
 function checkRows(unit, reading, { zone, hours, requirement }) {
   if (!reading.present) {
     fail(unit, requirement, 'the clock area is not on screen')
@@ -330,6 +372,30 @@ function checkRows(unit, reading, { zone, hours, requirement }) {
       `${reading.times[0]} against ${reading.times[1]} is a ${observed}min gap, ` +
         `but ${zone} is ${expected}min from here at that moment`
     )
+  }
+  // 2.9: the comparison row states that same offset in words. It is checked
+  // against the independently computed minutes, so a row that agreed with
+  // itself while both were wrong would still fail.
+  if (reading.offsets !== null) {
+    // The home row carries an empty cell so the grid stays rectangular, so it
+    // is the filled ones that have to number exactly one.
+    const filled = reading.offsets.filter((text) => text !== '')
+    const wanted = offsetLabel(trueOffsetMinutes(new Date(midpoint), zone))
+    if (filled.length !== 1) {
+      ok = false
+      fail(
+        unit,
+        '2.9',
+        `${filled.length} offsets are shown, expected one beside the comparison row`
+      )
+    } else if (filled[0] !== wanted) {
+      ok = false
+      fail(unit, '2.9', `the comparison row reads "${filled[0]}" where "${wanted}" was expected`)
+    }
+    if (reading.offsets[0] !== '') {
+      ok = false
+      fail(unit, '2.9', `the home row states an offset ("${reading.offsets[0]}") against itself`)
+    }
   }
   return ok
 }
