@@ -65,7 +65,10 @@ const DAY_MS = readNumericConstant('src/shared/clock.ts', 'DAY_MS')
 const SHIFT_RESET_MS = readNumericConstant('src/shared/clock.ts', 'SHIFT_RESET_MS')
 const SHIFT_HOURS_LIMIT = readNumericConstant('src/shared/clock.ts', 'SHIFT_HOURS_LIMIT')
 const WHEEL_STEP_PX = readNumericConstant('src/shared/wheel-steps.ts', 'WHEEL_STEP_PX')
+// Two strips, two lengths: the timer's phase strip is ten blocks, while
+// clock mode's day strip is twelve so that a block is exactly two hours.
 const PROGRESS_BLOCKS = readNumericConstant('src/shared/types.ts', 'PROGRESS_BLOCKS')
+const DAY_BLOCKS = readNumericConstant('src/shared/clock.ts', 'DAY_BLOCKS')
 const WORK_PHASE_MS = readDefaultSetting('workMinutes') * 60_000
 
 /** Interface language the run is pinned to, so the labels are predictable. */
@@ -347,8 +350,8 @@ function dayBlocksAt(instant) {
   const intoDay =
     ((instant.getHours() * 60 + instant.getMinutes()) * 60 + instant.getSeconds()) * 1000 +
     instant.getMilliseconds()
-  const filled = Math.round((intoDay / DAY_MS) * PROGRESS_BLOCKS)
-  return Math.min(PROGRESS_BLOCKS, Math.max(0, filled))
+  const filled = Math.round((intoDay / DAY_MS) * DAY_BLOCKS)
+  return Math.min(DAY_BLOCKS, Math.max(0, filled))
 }
 
 /** The mini bar's date line, rebuilt in the language's customary order. */
@@ -543,11 +546,11 @@ function checkDisplay(unit, reading, options) {
       ok = false
     }
   }
-  if (reading.blocks.count !== PROGRESS_BLOCKS) {
+  if (reading.blocks.count !== DAY_BLOCKS) {
     fail(
       unit,
       requirements.blocks,
-      `the day-progress strip holds ${reading.blocks.count} blocks, expected ${PROGRESS_BLOCKS}`
+      `the day-progress strip holds ${reading.blocks.count} blocks, expected ${DAY_BLOCKS}`
     )
     ok = false
   }

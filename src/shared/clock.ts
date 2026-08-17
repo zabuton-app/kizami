@@ -4,6 +4,15 @@ import type { ClockFormat, Language } from './types'
 /** Length of a 24-hour day in milliseconds (fixed; DST shifts are ignored). */
 export const DAY_MS = 86_400_000
 
+/**
+ * Blocks in clock mode's day-progress strip. Twelve rather than the timer's
+ * ten because a day divides into it evenly: one block is exactly two hours,
+ * and every boundary lands on an even hour, so the strip can be read off
+ * without arithmetic. The timer keeps ten, where a block is a plain tenth of
+ * the phase and twelve would buy nothing.
+ */
+export const DAY_BLOCKS = 12
+
 function pad2(value: number): string {
   return String(value).padStart(2, '0')
 }

@@ -126,10 +126,19 @@ export function remainingMsAt(state: TimerState, now: number): number {
     : state.remainingMs
 }
 
-export function filledBlocks(remainingMs: number, totalMs: number): number {
+/**
+ * How many blocks of a progress strip are filled. `blocks` is a parameter
+ * because the two strips are not the same length: the timer's is ten, while
+ * clock mode's is twelve so that a block is exactly two hours of the day.
+ */
+export function filledBlocks(
+  remainingMs: number,
+  totalMs: number,
+  blocks: number = PROGRESS_BLOCKS
+): number {
   if (totalMs <= 0) return 0
   const ratio = 1 - remainingMs / totalMs
-  return Math.min(PROGRESS_BLOCKS, Math.max(0, Math.round(ratio * PROGRESS_BLOCKS)))
+  return Math.min(blocks, Math.max(0, Math.round(ratio * blocks)))
 }
 
 /**

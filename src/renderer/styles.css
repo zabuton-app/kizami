@@ -319,13 +319,22 @@ body {
   background: none;
 }
 
+/* The strip's width is pinned rather than falling out of the block count, so
+   the two modes' gauges are the same size on screen even though they hold a
+   different number of blocks: ten for a phase, twelve for a day. 265px is what
+   the original ten 22px blocks and their nine 5px gaps came to. */
 .timer__blocks {
   display: flex;
   gap: 5px;
+  width: 265px;
+  justify-content: center;
 }
 
+/* Equal shares of whatever the strip has left after the gaps, so a change to
+   the count resizes the blocks instead of the gauge. Ten blocks still come out
+   at the 22px they were drawn at. */
 .timer__block {
-  width: 22px;
+  flex: 1 1 0;
   height: 14px;
   border-radius: 5px;
 }

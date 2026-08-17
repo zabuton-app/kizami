@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ClockRowsInput } from '../../src/shared/clock'
 import {
   buildClockRows,
+  DAY_BLOCKS,
   DAY_MS,
   formatClock,
   formatClockDate,
@@ -97,22 +98,38 @@ describe('msIntoDay', () => {
 
 describe('day progress blocks (filledBlocks over DAY_MS)', () => {
   const blocksAt = (h: number, m: number): number =>
-    filledBlocks(DAY_MS - msIntoDay(h, m, 0, 0), DAY_MS)
+    filledBlocks(DAY_MS - msIntoDay(h, m, 0, 0), DAY_MS, DAY_BLOCKS)
 
   it('is empty at midnight (rollover resets the bar)', () => {
     expect(blocksAt(0, 0)).toBe(0)
   })
 
   it('is half full at noon', () => {
-    expect(blocksAt(12, 0)).toBe(5)
+    expect(blocksAt(12, 0)).toBe(6)
   })
 
-  it('rounds up at 18:00 (75% of the day)', () => {
-    expect(blocksAt(18, 0)).toBe(8)
+  it('is three quarters full at 18:00', () => {
+    expect(blocksAt(18, 0)).toBe(9)
   })
 
   it('is full just before midnight', () => {
-    expect(blocksAt(23, 59)).toBe(10)
+    expect(blocksAt(23, 59)).toBe(DAY_BLOCKS)
+  })
+
+  // The reason for twelve: every block is exactly two hours, so each one fills
+  // on an even hour and the strip can be read without arithmetic.
+  it('fills exactly one block every two hours, on the hour', () => {
+    for (let block = 0; block <= DAY_BLOCKS; block += 1) {
+      const hour = block * 2
+      expect(blocksAt(Math.min(hour, 23), hour > 23 ? 59 : 0), `${hour}:00`).toBe(
+        Math.min(block, DAY_BLOCKS)
+      )
+    }
+  })
+
+  it('divides the day evenly, which ten would not', () => {
+    expect(24 % DAY_BLOCKS).toBe(0)
+    expect(24 / DAY_BLOCKS).toBe(2)
   })
 })
 

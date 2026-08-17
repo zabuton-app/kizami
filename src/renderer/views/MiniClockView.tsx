@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   buildClockRows,
+  DAY_BLOCKS,
   DAY_MS,
   formatClockDate,
   formatShiftLabel,
@@ -10,7 +11,7 @@ import {
 import { t } from '../../shared/i18n'
 import { filledBlocks } from '../../shared/timer-logic'
 import { TIMEZONE_OPTIONS, type SecondaryTimeZone } from '../../shared/timezones'
-import { PROGRESS_BLOCKS, type ClockFormat, type Language } from '../../shared/types'
+import { type ClockFormat, type Language } from '../../shared/types'
 import type { ClockShiftProps } from '../App'
 
 const PALETTE_SIZE = 3
@@ -102,7 +103,8 @@ export function MiniClockView({
         realNow.getSeconds(),
         realNow.getMilliseconds()
       ),
-    DAY_MS
+    DAY_MS,
+    DAY_BLOCKS
   )
 
   const clockClass = [
@@ -166,7 +168,7 @@ export function MiniClockView({
         ))}
       </div>
       <div className="mini-bar__blocks">
-        {Array.from({ length: PROGRESS_BLOCKS }, (_, i) => (
+        {Array.from({ length: DAY_BLOCKS }, (_, i) => (
           <span
             key={i}
             className="mini-bar__block"

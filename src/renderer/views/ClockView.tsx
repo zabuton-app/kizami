@@ -1,15 +1,10 @@
 import { Fragment, useEffect, useState } from 'react'
-import { buildClockRows, DAY_MS, formatShiftLabel, msIntoDay } from '../../shared/clock'
+import { buildClockRows, DAY_BLOCKS, DAY_MS, formatShiftLabel, msIntoDay } from '../../shared/clock'
 import { t } from '../../shared/i18n'
 import type { ThemeId } from '../../shared/themes'
 import { filledBlocks } from '../../shared/timer-logic'
 import { TIMEZONE_OPTIONS, type SecondaryTimeZone } from '../../shared/timezones'
-import {
-  PROGRESS_BLOCKS,
-  type ClockFormat,
-  type Language,
-  type TimerSnapshot
-} from '../../shared/types'
+import { type ClockFormat, type Language, type TimerSnapshot } from '../../shared/types'
 import type { ClockShiftProps } from '../App'
 import { ThemePicker } from '../components/ThemePicker'
 
@@ -108,9 +103,9 @@ export function ClockView({
     .concat(shiftLabel === '' ? [] : [shiftLabel])
     .join(', ')
 
-  // How much of the 24-hour day has passed, in the same 10-block strip the
-  // timer uses for phase progress (empty at midnight, half full at noon).
-  // Always the real day, never the shifted one (6.1).
+  // How much of the 24-hour day has passed, in a twelve-block strip so a block
+  // is exactly two hours (empty at midnight, half full at noon). Always the
+  // real day, never the shifted one (6.1).
   const dayBlocks = filledBlocks(
     DAY_MS -
       msIntoDay(
@@ -119,7 +114,8 @@ export function ClockView({
         realNow.getSeconds(),
         realNow.getMilliseconds()
       ),
-    DAY_MS
+    DAY_MS,
+    DAY_BLOCKS
   )
 
   const toggleLabel = snapshot.running
@@ -193,7 +189,7 @@ export function ClockView({
           ))}
         </div>
         <div className="timer__blocks">
-          {Array.from({ length: PROGRESS_BLOCKS }, (_, i) => (
+          {Array.from({ length: DAY_BLOCKS }, (_, i) => (
             <span
               key={i}
               className="timer__block"
