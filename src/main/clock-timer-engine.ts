@@ -4,8 +4,10 @@ import {
   clockTimerSnapshot,
   dismissClockTimer,
   IDLE_CLOCK_TIMER,
+  resetClockTimer,
   startClockTimer,
   tickClockTimer,
+  toggleClockTimer,
   type ClockTimerPresetId,
   type ClockTimerSnapshot,
   type ClockTimerState
@@ -44,6 +46,25 @@ export class ClockTimerEngine extends EventEmitter<ClockTimerEngineEvents> {
     return this.snapshot()
   }
 
+  toggle(): ClockTimerSnapshot {
+    // Catch up first, so a timer that ran out while nobody was looking
+    // completes (and notifies) instead of being paused at zero.
+    this.advance()
+    this.state = toggleClockTimer(this.state, Date.now())
+    this.syncTicking()
+    this.emit('update')
+    return this.snapshot()
+  }
+
+  reset(): ClockTimerSnapshot {
+    // Same catch-up as toggle: an overdue timer completes first, then resets.
+    this.advance()
+    this.state = resetClockTimer(this.state)
+    this.syncTicking()
+    this.emit('update')
+    return this.snapshot()
+  }
+
   cancel(): ClockTimerSnapshot {
     this.state = cancelClockTimer()
     this.stopTicking()
@@ -78,6 +99,15 @@ export class ClockTimerEngine extends EventEmitter<ClockTimerEngineEvents> {
     }, 1000)
     // Don't keep the process alive just for the tick (app lifecycle owns that).
     this.interval.unref?.()
+  }
+
+  /** Tick exactly while counting down; a paused timer has nothing to observe. */
+  private syncTicking(): void {
+    if (this.state.status === 'running') {
+      this.startTicking()
+    } else {
+      this.stopTicking()
+    }
   }
 
   private stopTicking(): void {

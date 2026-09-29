@@ -4,6 +4,7 @@ import { join, resolve, sep } from 'node:path'
 import {
   WINDOW_MIN_CONTENT_HEIGHT,
   WINDOW_MIN_SCALE,
+  WINDOW_MINI_CLOCK_SIZE,
   WINDOW_MINI_SIZE,
   WINDOW_SIZE
 } from '../shared/types'
@@ -38,6 +39,8 @@ const ZOOM_STEP = 0.1
 let win: BrowserWindow | null = null
 let quitting = false
 let miniMode = false
+/** Clock mode's mini bar is wider (WINDOW_MINI_CLOCK_SIZE); see applyMiniMode. */
+let miniClock = false
 const transitionState = new PopupTransitionState()
 
 /**
@@ -211,9 +214,10 @@ export function createPopupWindow(): BrowserWindow {
 
 /** Mini window size at the given zoom factor. */
 function miniSize(zoom: number): { width: number; height: number } {
+  const base = miniClock ? WINDOW_MINI_CLOCK_SIZE : WINDOW_MINI_SIZE
   return {
-    width: Math.round(WINDOW_MINI_SIZE.width * zoom),
-    height: Math.round(WINDOW_MINI_SIZE.height * zoom)
+    width: Math.round(base.width * zoom),
+    height: Math.round(base.height * zoom)
   }
 }
 
@@ -313,9 +317,12 @@ function syncViewportAfterTransition(seq: number): void {
 /**
  * Switch the window between the fixed-size mini layout and the resizable
  * normal layout. The last user-given normal size survives a round trip.
+ * `clockMode` picks the mini size (the clock bar is wider); calling this again
+ * while mini with a different `clockMode` re-pins the window to the new size.
  */
-export function applyMiniMode(mini: boolean): void {
+export function applyMiniMode(mini: boolean, clockMode: boolean): void {
   miniMode = mini
+  miniClock = clockMode
   if (!win) return
   // The mode switch invalidates older callbacks, clears remap/nudge guards,
   // and arms stale-hint correction around the transition.
@@ -324,6 +331,11 @@ export function applyMiniMode(mini: boolean): void {
   if (mini) {
     applyMiniConstraints(zoom)
     syncViewportAfterTransition(seq)
+    // The clock bar is wider than the normal window, so entering it from a
+    // popup placed against a screen edge (a right-hand tray) would push its
+    // far end off-screen; re-clamp the origin as the exit path does.
+    const size = miniSize(zoom)
+    clampToWorkArea(size.width, size.height)
     return
   }
   const minWidth = Math.round(WINDOW_SIZE.width * WINDOW_MIN_SCALE)
@@ -366,16 +378,22 @@ export function applyMiniMode(mini: boolean): void {
   syncViewportAfterTransition(seq)
   // The mini window may have been dragged near a screen edge; growing back
   // from there can push the normal window off-screen, so re-clamp the origin.
+  clampToWorkArea(lastSize.width, lastSize.height)
+}
+
+/** Move the window so a `width` x `height` frame at its origin stays on screen. */
+function clampToWorkArea(width: number, height: number): void {
+  if (!win) return
   const [x, y] = win.getPosition()
   const workArea = screen.getDisplayNearestPoint({ x, y }).workArea
   win.setPosition(
     Math.min(
       Math.max(x, workArea.x + TRAY_MARGIN),
-      workArea.x + workArea.width - lastSize.width - TRAY_MARGIN
+      workArea.x + workArea.width - width - TRAY_MARGIN
     ),
     Math.min(
       Math.max(y, workArea.y + TRAY_MARGIN),
-      workArea.y + workArea.height - lastSize.height - TRAY_MARGIN
+      workArea.y + workArea.height - height - TRAY_MARGIN
     )
   )
 }

@@ -101,6 +101,14 @@ export function registerIpc(
     }
     return clockTimer.start(presetId)
   })
+  ipcMain.handle(IPC.clockTimerToggle, (event) => {
+    assertTrustedSender(event, popup)
+    return clockTimer.toggle()
+  })
+  ipcMain.handle(IPC.clockTimerReset, (event) => {
+    assertTrustedSender(event, popup)
+    return clockTimer.reset()
+  })
   ipcMain.handle(IPC.clockTimerCancel, (event) => {
     assertTrustedSender(event, popup)
     return clockTimer.cancel()
@@ -120,8 +128,13 @@ export function registerIpc(
     const previous = settingsStore.get()
     const next = settingsStore.update(patch)
     engine.applySettingsChange(next)
-    if (previous.miniMode !== next.miniMode) {
-      applyMiniMode(next.miniMode)
+    // Clock mode has its own mini width, so a mode switch while mini (not
+    // reachable from the bar's UI today, but a valid patch) resizes too.
+    if (
+      previous.miniMode !== next.miniMode ||
+      (next.miniMode && previous.clockMode !== next.clockMode)
+    ) {
+      applyMiniMode(next.miniMode, next.clockMode)
     }
     popup.webContents.send(IPC.settingsChanged, next)
     return next

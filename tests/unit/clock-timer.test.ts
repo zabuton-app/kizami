@@ -2,14 +2,18 @@ import { describe, expect, it } from 'vitest'
 import {
   cancelClockTimer,
   CLOCK_TIMER_PRESETS,
+  clockTimerReadoutLabel,
   clockTimerRemainingMs,
   clockTimerSnapshot,
   dismissClockTimer,
   formatClockTimerTime,
   IDLE_CLOCK_TIMER,
+  isClockTimerCounting,
   isClockTimerPresetId,
+  resetClockTimer,
   startClockTimer,
   tickClockTimer,
+  toggleClockTimer,
   type ClockTimerState
 } from '../../src/shared/clock-timer'
 
@@ -120,6 +124,83 @@ describe('cancelClockTimer / dismissClockTimer', () => {
   })
 })
 
+describe('toggleClockTimer', () => {
+  it('pauses a running timer, freezing the time left at that moment', () => {
+    const running = startClockTimer('15m', T0)
+    expect(toggleClockTimer(running, T0 + 4 * 60_000)).toEqual({
+      status: 'paused',
+      durationMs: 15 * 60_000,
+      remainingMs: 11 * 60_000
+    })
+  })
+
+  it('resumes a paused timer with a fresh end time, not counting the pause', () => {
+    const paused: ClockTimerState = {
+      status: 'paused',
+      durationMs: 15 * 60_000,
+      remainingMs: 11 * 60_000
+    }
+    // Resumed an hour later: the time left is exactly what it was paused at.
+    const resumeAt = T0 + 60 * 60_000
+    expect(toggleClockTimer(paused, resumeAt)).toEqual({
+      status: 'running',
+      durationMs: 15 * 60_000,
+      endsAt: resumeAt + 11 * 60_000
+    })
+  })
+
+  it('leaves an overdue running timer for the next tick to complete', () => {
+    const running = startClockTimer('5m', T0)
+    expect(toggleClockTimer(running, T0 + 5 * 60_000)).toBe(running)
+    expect(toggleClockTimer(running, T0 + 9 * 60_000)).toBe(running)
+  })
+
+  it('leaves idle and completed timers untouched', () => {
+    const completed: ClockTimerState = { status: 'completed', durationMs: 60_000 }
+    expect(toggleClockTimer(IDLE_CLOCK_TIMER, T0)).toBe(IDLE_CLOCK_TIMER)
+    expect(toggleClockTimer(completed, T0)).toBe(completed)
+  })
+})
+
+describe('resetClockTimer', () => {
+  const full: ClockTimerState = {
+    status: 'paused',
+    durationMs: 30 * 60_000,
+    remainingMs: 30 * 60_000
+  }
+
+  it('winds running, paused and completed timers back to full, paused', () => {
+    expect(resetClockTimer(startClockTimer('30m', T0))).toEqual(full)
+    expect(
+      resetClockTimer({ status: 'paused', durationMs: 30 * 60_000, remainingMs: 60_000 })
+    ).toEqual(full)
+    expect(resetClockTimer({ status: 'completed', durationMs: 30 * 60_000 })).toEqual(full)
+  })
+
+  it('leaves an idle timer untouched', () => {
+    expect(resetClockTimer(IDLE_CLOCK_TIMER)).toBe(IDLE_CLOCK_TIMER)
+  })
+})
+
+describe('isClockTimerCounting / clockTimerReadoutLabel', () => {
+  it('counts running and paused timers only', () => {
+    expect(isClockTimerCounting('running')).toBe(true)
+    expect(isClockTimerCounting('paused')).toBe(true)
+    expect(isClockTimerCounting('idle')).toBe(false)
+    expect(isClockTimerCounting('completed')).toBe(false)
+  })
+
+  it('names the readout, marking a paused timer', () => {
+    const running = { status: 'running', remainingSec: 90, totalSec: 300 } as const
+    expect(clockTimerReadoutLabel(running, 'Timer remaining', '(paused)')).toBe(
+      'Timer remaining 01:30'
+    )
+    expect(
+      clockTimerReadoutLabel({ ...running, status: 'paused' }, 'Timer remaining', '(paused)')
+    ).toBe('Timer remaining 01:30 (paused)')
+  })
+})
+
 describe('clockTimerRemainingMs', () => {
   const running = startClockTimer('30m', T0)
 
@@ -154,6 +235,19 @@ describe('clockTimerSnapshot', () => {
     expect(clockTimerSnapshot(running, T0 + 1000)).toEqual({
       status: 'running',
       remainingSec: 15 * 60 - 1,
+      totalSec: 15 * 60
+    })
+  })
+
+  it('reports a paused timer at its frozen remaining time, whatever the clock says', () => {
+    const paused: ClockTimerState = {
+      status: 'paused',
+      durationMs: 15 * 60_000,
+      remainingMs: 90_500
+    }
+    expect(clockTimerSnapshot(paused, T0 + 24 * 60 * 60_000)).toEqual({
+      status: 'paused',
+      remainingSec: 91,
       totalSec: 15 * 60
     })
   })

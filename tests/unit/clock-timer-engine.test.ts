@@ -130,6 +130,83 @@ describe('ClockTimerEngine completion', () => {
   })
 })
 
+describe('ClockTimerEngine pause, resume and reset', () => {
+  it('stops ticking while paused and never completes during the pause', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(T0)
+    const engine = new ClockTimerEngine()
+    const onUpdate = vi.fn()
+    const onCompleted = vi.fn()
+    engine.on('update', onUpdate)
+    engine.on('completed', onCompleted)
+
+    engine.start('5m')
+    vi.advanceTimersByTime(60_000)
+    expect(engine.toggle()).toEqual({ status: 'paused', remainingSec: 4 * 60, totalSec: 5 * 60 })
+
+    onUpdate.mockClear()
+    // Far past where the timer would have ended had it kept running.
+    vi.advanceTimersByTime(10 * 60_000)
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(onCompleted).not.toHaveBeenCalled()
+    expect(engine.snapshot()).toEqual({ status: 'paused', remainingSec: 4 * 60, totalSec: 5 * 60 })
+
+    // Resumed, it picks up where it left off and completes on schedule.
+    expect(engine.toggle()).toEqual({ status: 'running', remainingSec: 4 * 60, totalSec: 5 * 60 })
+    vi.advanceTimersByTime(4 * 60_000)
+    expect(onCompleted).toHaveBeenCalledTimes(1)
+    expect(engine.snapshot().status).toBe('completed')
+  })
+
+  it('completes an overdue timer instead of pausing it at zero', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(T0)
+    const engine = new ClockTimerEngine()
+    const onCompleted = vi.fn()
+    engine.on('completed', onCompleted)
+
+    engine.start('5m')
+    now.mockReturnValue(T0 + 6 * 60_000)
+    expect(engine.toggle().status).toBe('completed')
+    expect(onCompleted).toHaveBeenCalledTimes(1)
+  })
+
+  it('reset winds the timer back to full and holds it paused', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(T0)
+    const engine = new ClockTimerEngine()
+    const onUpdate = vi.fn()
+    engine.on('update', onUpdate)
+
+    engine.start('15m')
+    vi.advanceTimersByTime(7 * 60_000)
+    expect(engine.reset()).toEqual({ status: 'paused', remainingSec: 15 * 60, totalSec: 15 * 60 })
+
+    onUpdate.mockClear()
+    vi.advanceTimersByTime(5000)
+    expect(onUpdate).not.toHaveBeenCalled()
+
+    // A completed timer resets the same way, ready to run again.
+    engine.toggle()
+    vi.advanceTimersByTime(15 * 60_000)
+    expect(engine.snapshot().status).toBe('completed')
+    expect(engine.reset()).toEqual({ status: 'paused', remainingSec: 15 * 60, totalSec: 15 * 60 })
+    engine.stop()
+  })
+
+  it('toggle and reset leave an idle engine idle and not ticking', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(T0)
+    const engine = new ClockTimerEngine()
+    const onUpdate = vi.fn()
+
+    expect(engine.toggle().status).toBe('idle')
+    expect(engine.reset().status).toBe('idle')
+    engine.on('update', onUpdate)
+    vi.advanceTimersByTime(5000)
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+})
+
 describe('ClockTimerEngine independence from the pomodoro engine', () => {
   it('leaves the pomodoro timer untouched across a full clock-timer run', () => {
     const now = vi.spyOn(Date, 'now').mockReturnValue(T0)

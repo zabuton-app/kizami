@@ -75,14 +75,14 @@ body {
 
    Leaving mini mode renders the normal view before the compositor has grown
    the window back (the resize is asynchronous on Wayland), so for a moment
-   the full layout has only the mini bar's 380x58 to work with and spills out
+   the full layout has only the mini bar's 58px height to work with and spills out
    of the window. Pin the floors to the smallest supported normal window
    (WINDOW_SIZE.width * WINDOW_MIN_SCALE and WINDOW_MIN_CONTENT_HEIGHT) so the
    layout never reflows to something smaller than it is designed for. */
 .app:not(.app--mini) {
   border: 3px solid var(--ink);
   min-width: 280px;
-  min-height: 432px;
+  min-height: 490px;
 }
 
 /* --- Title bar (custom window decoration) --- */
@@ -346,25 +346,31 @@ body {
 
 /* --- Clock-mode countdown timer --- */
 
-/* Sits where the timer view keeps its start/skip buttons, and like them it is
-   a single row in every state — the height floor (WINDOW_MIN_CONTENT_HEIGHT)
-   was measured against that one-row layout, so a second row would push the
-   theme picker off screen at the minimum window height. The wrap is only a
-   safety net for a translation that outgrows the sizes below. */
+/* Where the timer view keeps its start/skip buttons: the preset row, and
+   under it — only while a timer exists — the readout and its controls. The
+   height floor (WINDOW_MIN_CONTENT_HEIGHT) is measured with both rows, so
+   the theme picker stays on screen at the minimum window height. */
 .ctimer {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  /* Stretch against the centering parent (.timer), or the fluid preset
-     chips would divide a shrink-to-fit width instead of the card width. */
+  gap: 10px;
+  /* Stretch against the centering parent (.timer), so the preset row can
+     center itself across the card width. */
   align-self: stretch;
 }
 
+/* Wrapping is only a safety net for a translation that outgrows the sizes
+   below; the design fits one line down to the width floor. */
 .ctimer__presets {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
+}
+
+.ctimer__preset-count {
+  display: none;
 }
 
 .ctimer__presets .btn {
@@ -375,30 +381,17 @@ body {
   box-shadow: 0 4px 0 var(--ink);
 }
 
-/* With a readout or the done badge beside them the presets compress to bare
-   minute counts. The chips start from a fixed preferred width and *shrink*
-   when the window narrows — growing them instead would swallow the row's
-   leftover space and drag the group out of center. Wrapping is disabled
-   here because a wrapping container places items by their preferred size
-   (it would wrap before ever shrinking), and a second line is exactly what
-   pushes the theme picker off the height floor. */
-.ctimer--active {
-  flex-wrap: nowrap;
+.ctimer__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.ctimer--active .ctimer__presets {
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.ctimer--active .ctimer__presets .btn {
-  /* A definite width rather than a flex-basis: the preset group's own
-     intrinsic width is computed from its items' widths, and a basis would
-     be ignored there — collapsing the group to its text width. */
-  width: 38px;
-  flex-shrink: 1;
-  min-width: 0;
-  padding: 8px 0;
+/* Idle, the row holds only the empty live region (out of flow below), so it
+   dissolves instead of adding a gap to the column. */
+.ctimer__controls--idle {
+  display: contents;
 }
 
 .ctimer__readout {
@@ -411,13 +404,18 @@ body {
   font-variant-numeric: tabular-nums;
   min-width: 74px;
   text-align: center;
+  flex: none;
 }
 
-/* Round icon buttons, sized to the mini bar's expand button family. The
-   dismiss shares the cancel's 34px footprint on purpose: it keeps the
-   completed row no wider than the running one. */
-.ctimer__cancel,
-.ctimer__dismiss {
+/* Frozen, not finished: the time stays readable but steps back in tone. */
+.ctimer__readout--paused {
+  color: var(--sub);
+}
+
+/* Round icon buttons, sized to the mini bar's expand button family; the
+   primary ones (pause/resume, and the dismiss that takes their place) are
+   filled so the main action reads first. */
+.ctimer__icon {
   width: 34px;
   height: 34px;
   padding: 0;
@@ -431,7 +429,7 @@ body {
   box-shadow: 0 4px 0 var(--ink);
 }
 
-.ctimer__dismiss {
+.ctimer__icon--primary {
   background: var(--primary);
   color: var(--primary-text);
 }
@@ -442,34 +440,26 @@ body {
   line-height: 1;
 }
 
-/* The live region stays mounted while empty (see ClockView); out of flow it
-   adds neither height nor a flex gap to the row. */
+/* The live region stays mounted while empty (see ClockTimerControls); out of
+   flow it adds neither height nor a flex gap to the row. */
 .ctimer__done:empty {
   position: absolute;
 }
 
-/* A shrunken window shrinks the fixed-width pieces too, so the fluid preset
-   chips keep enough room for their digits down to the width floor. */
+/* In a shrunken window the full labels no longer fit one row, and a second
+   row would push the theme picker off the height floor, so the chips drop to
+   bare minute counts (the full label stays on the accessible name). */
 @media (max-width: 344px) {
-  .ctimer {
-    gap: 6px;
-  }
-
-  .ctimer__readout {
-    font-size: 16px;
-    min-width: 0;
-  }
-
-  .ctimer__done {
-    font-size: 13px;
-  }
-
-  .ctimer__presets {
-    gap: 4px;
-  }
-
   .ctimer__presets .btn {
-    font-size: 11px;
+    min-width: 36px;
+  }
+
+  .ctimer__preset-label {
+    display: none;
+  }
+
+  .ctimer__preset-count {
+    display: inline;
   }
 }
 
@@ -552,7 +542,8 @@ body {
 
 /* One zone, stacked: a label line over the time. Stacking is what lets a
    second zone cost only its own width rather than a label beside a time,
-   which is the difference between fitting the 380px bar and not (2.6). */
+   which is the difference between fitting the bar (WINDOW_MINI_CLOCK_SIZE)
+   beside the countdown controls and not (2.6). */
 .mini-bar__cell {
   display: flex;
   flex-direction: column;
@@ -642,22 +633,92 @@ body {
   border-radius: 3px;
 }
 
-/* The running clock-mode countdown, read-only in the bar. Styled like the
-   date beside it but in ink, so a glance separates "a timer is running"
-   from the always-there calendar. */
+/* The clock-mode countdown's readout in the bar: drawn exactly like the
+   clock's own digits (size, weight, spacing and optical nudge), so the two
+   read as one row of times rather than a big clock beside a small label. */
+.mini-bar__readout {
+  font-weight: 900;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -1px;
+  color: var(--ink);
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transform: translateY(-2px);
+}
+
+/* Beside the paired clock it follows that clock's smaller size too
+   (.mini-bar__clock--pair .mini-bar__time); the paired times are centred on
+   the bar's line, so the readout is simply centred as well. */
+.mini-bar:has(.mini-bar__clock--pair) .mini-bar__readout {
+  font-size: 18px;
+  letter-spacing: 0;
+  transform: none;
+}
+
+/* The completion badge, a short phrase rather than a time: sized like the
+   date beside it but in ink. */
 .mini-bar__ctimer {
   font-weight: 900;
   font-size: 14px;
   color: var(--ink);
   flex: none;
   white-space: nowrap;
-  font-variant-numeric: tabular-nums;
   /* Same optical correction as the date (Zen Maru Gothic sits low). */
   transform: translateY(-2px);
 }
 
+/* The countdown's presets and controls in the bar. Neither may shrink —
+   the day-progress blocks are the part that gives way. */
+.mini-bar__presets,
+.mini-bar__controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.mini-bar__controls {
+  gap: 6px;
+}
+
+/* Idle, only the empty live region is left inside (out of flow), so the
+   controls dissolve rather than leave a gap in the bar. */
+.mini-bar__controls--idle {
+  display: contents;
+}
+
+.mini-bar__preset {
+  width: auto;
+  min-width: 26px;
+  padding: 0 4px;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The pause/resume and dismiss buttons: the bar's round primary button,
+   scaled down so the controls fit beside the clock. */
+.mini-bar__toggle--small {
+  width: 28px;
+  height: 28px;
+  border-width: 2px;
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.mini-bar__toggle--small:hover {
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+/* A paused countdown in the bar, dimmed like its normal-window readout. */
+.mini-bar__readout--paused {
+  color: var(--sub);
+}
+
 /* The completion badge doubles as the live region, so it stays mounted while
-   empty (see MiniClockView); out of flow it neither takes width from the
+   empty (see ClockTimerControls); out of flow it neither takes width from the
    day-progress blocks nor contributes a flex gap. */
 .mini-bar__ctimer--done:empty {
   position: absolute;

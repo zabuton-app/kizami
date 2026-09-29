@@ -27,16 +27,19 @@ export function isClockTimerPresetId(value: unknown): value is ClockTimerPresetI
   return CLOCK_TIMER_PRESETS.some((preset) => preset.id === value)
 }
 
-export type ClockTimerStatus = 'idle' | 'running' | 'completed'
+export type ClockTimerStatus = 'idle' | 'running' | 'paused' | 'completed'
 
 /**
  * Countdown state held by the main process only, never persisted.
  * While running, `endsAt` (epoch ms) is the sole source of truth; remaining
- * time is re-derived from it on every read, never accumulated.
+ * time is re-derived from it on every read, never accumulated. A paused timer
+ * has no end yet, so it holds the frozen remaining time instead and gets a
+ * fresh `endsAt` when it resumes.
  */
 export type ClockTimerState =
   | { status: 'idle' }
   | { status: 'running'; durationMs: number; endsAt: number }
+  | { status: 'paused'; durationMs: number; remainingMs: number }
   | { status: 'completed'; durationMs: number }
 
 export const IDLE_CLOCK_TIMER: ClockTimerState = { status: 'idle' }
@@ -44,7 +47,7 @@ export const IDLE_CLOCK_TIMER: ClockTimerState = { status: 'idle' }
 /** Display-ready snapshot pushed to the renderer over IPC. */
 export interface ClockTimerSnapshot {
   status: ClockTimerStatus
-  /** Whole seconds left, rounded up like the pomodoro snapshot; 0 unless running. */
+  /** Whole seconds left, rounded up like the pomodoro snapshot; 0 while idle or completed. */
   remainingSec: number
   /** Duration of the current or just-finished timer in seconds; 0 while idle. */
   totalSec: number
@@ -96,9 +99,68 @@ export function dismissClockTimer(state: ClockTimerState): ClockTimerState {
   return state.status === 'completed' ? IDLE_CLOCK_TIMER : state
 }
 
-/** Milliseconds left at `now`; clamped to zero, and zero unless running. */
+/**
+ * Pause a running countdown or resume a paused one; any other state is left
+ * untouched. Expects `state` to have been ticked to `now` first: a running
+ * timer already past its end is returned as-is so the next tick completes it,
+ * rather than being frozen at zero where it would never complete.
+ */
+export function toggleClockTimer(state: ClockTimerState, now: number): ClockTimerState {
+  if (state.status === 'running') {
+    const remainingMs = state.endsAt - now
+    if (remainingMs <= 0) return state
+    return { status: 'paused', durationMs: state.durationMs, remainingMs }
+  }
+  if (state.status === 'paused') {
+    return { status: 'running', durationMs: state.durationMs, endsAt: now + state.remainingMs }
+  }
+  return state
+}
+
+/**
+ * Wind the current timer — running, paused or completed — back to its full
+ * duration and hold it paused, so it can be started again from the top.
+ * An idle timer has no duration to return to and is left untouched.
+ */
+export function resetClockTimer(state: ClockTimerState): ClockTimerState {
+  if (state.status === 'idle') return state
+  return { status: 'paused', durationMs: state.durationMs, remainingMs: state.durationMs }
+}
+
+/**
+ * Status of a possibly not-yet-fetched snapshot. Until the initial fetch
+ * lands the timer is shown as idle; the snapshot subscription corrects this
+ * within the same frame in practice.
+ */
+export function clockTimerStatusOf(snapshot: ClockTimerSnapshot | null): ClockTimerStatus {
+  return snapshot?.status ?? 'idle'
+}
+
+/** Whether a timer is counting down or paused mid-way, i.e. has a readout to show. */
+export function isClockTimerCounting(status: ClockTimerStatus): boolean {
+  return status === 'running' || status === 'paused'
+}
+
+/**
+ * Accessible name for a countdown readout: "<label> <time>", plus the paused
+ * marker when the timer is held. Shared by the normal window and the mini bar.
+ */
+export function clockTimerReadoutLabel(
+  snapshot: ClockTimerSnapshot,
+  remainingLabel: string,
+  pausedLabel: string
+): string {
+  const time = formatClockTimerTime(snapshot.remainingSec)
+  return snapshot.status === 'paused'
+    ? `${remainingLabel} ${time} ${pausedLabel}`
+    : `${remainingLabel} ${time}`
+}
+
+/** Milliseconds left at `now`; clamped to zero, and zero while idle or completed. */
 export function clockTimerRemainingMs(state: ClockTimerState, now: number): number {
-  return state.status === 'running' ? Math.max(0, state.endsAt - now) : 0
+  if (state.status === 'running') return Math.max(0, state.endsAt - now)
+  if (state.status === 'paused') return state.remainingMs
+  return 0
 }
 
 /** Derive the display snapshot for `now`. */

@@ -50,7 +50,12 @@ sleep without drifting. There are no native dependencies.
   own.
 - **Preset timers.** Kitchen-timer style countdowns (5 min to 1 hour) started
   straight from clock mode, with a desktop notification when time is up —
-  independent of the pomodoro cycle.
+  independent of the pomodoro cycle. A running countdown can be paused,
+  resumed, reset to its full length, or cancelled — from the popup or from
+  clock mode's mini bar.
+- **Keyboard shortcuts.** In the timer view and its mini bar, `Space`
+  starts / pauses / resumes and `S` skips the phase; in clock mode,
+  `Space` pauses / resumes the preset timer and `R` resets it.
 - **Five candy themes.** candy, strawberry milk, melon soda, grape gummy, and
   night pudding, switchable from the dots in the popup.
 - **Two tray icons.** The 刻 mark or the original tomato.
