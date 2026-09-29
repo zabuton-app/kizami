@@ -38,6 +38,9 @@ sleep without drifting. There are no native dependencies.
   and the countdown can read either the time left or the time spent.
 - **Tray-resident.** The popup can be closed at any time and the timer keeps
   going; desktop notifications announce every phase change.
+- **Time in the tray.** While a phase is under way, the macOS menu bar shows
+  its time next to the icon, and on Linux and Windows a progress ring fills in
+  around the tray icon. It can be turned off in the settings.
 - **No drift.** The engine is wall-clock based, so hiding the window or putting
   the machine to sleep does not throw the countdown off.
 - **Mini mode.** Shrink the popup to a slim bar with just the countdown and a
@@ -66,8 +69,8 @@ sleep without drifting. There are no native dependencies.
 ## Screenshots
 
 Durations, sessions per cycle, auto-start, time display, clock format, the
-comparison city, task name, language, and the tray icon are all set from the
-settings view:
+comparison city, task name, language, the tray icon, and the tray countdown are
+all set from the settings view:
 
 ![The kizami settings view](./docs/assets/shot-settings.png)
 

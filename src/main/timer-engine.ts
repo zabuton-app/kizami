@@ -104,14 +104,6 @@ export class TimerEngine extends EventEmitter<TimerEngineEvents> {
     }
   }
 
-  isRunning(): boolean {
-    return this.state.running
-  }
-
-  currentPhase(): TimerState['phase'] {
-    return this.state.phase
-  }
-
   snapshot(): TimerSnapshot {
     const now = Date.now()
     const settings = this.getSettings()

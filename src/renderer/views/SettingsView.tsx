@@ -440,6 +440,19 @@ export function SettingsView({
             </button>
           </div>
         </div>
+
+        <div className="settings__row">
+          <span className="settings__label">{t(language, 'settings.trayTime')}</span>
+          <button
+            type="button"
+            className={`switch ${settings.trayTime ? 'switch--on' : ''}`}
+            role="switch"
+            aria-checked={settings.trayTime}
+            onClick={() => onUpdate({ trayTime: !settings.trayTime })}
+          >
+            <span className="switch__knob" />
+          </button>
+        </div>
       </div>
 
       <UpdateSection language={language} />

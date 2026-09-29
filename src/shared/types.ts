@@ -39,6 +39,8 @@ export interface Settings {
   theme: ThemeId
   miniMode: boolean
   trayIcon: TrayIconId
+  /** Show the running phase's time next to (macOS) or around (elsewhere) the tray icon. */
+  trayTime: boolean
   timeDisplay: TimeDisplayMode
   clockMode: boolean
   clockFormat: ClockFormat
@@ -64,6 +66,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: DEFAULT_THEME,
   miniMode: false,
   trayIcon: DEFAULT_TRAY_ICON,
+  trayTime: true,
   timeDisplay: DEFAULT_TIME_DISPLAY,
   clockMode: false,
   clockFormat: DEFAULT_CLOCK_FORMAT,
