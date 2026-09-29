@@ -22,7 +22,7 @@ Only `playwright-core` is needed — no browser download, no extra install step.
 npm run test:e2e
 
 # Build, then run every check on a virtual X server (no window on screen)
-npm run test:e2e:xvfb
+npm run test:e2e:headless
 
 # Without rebuilding: pick checks by name, pass --verbose through
 node tools/ui-checks/run-all.mjs --xvfb clock-shift --verbose

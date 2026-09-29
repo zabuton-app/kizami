@@ -17,7 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "electron-vite build && node tools/ui-checks/run-all.mjs",
-    "test:e2e:xvfb": "electron-vite build && node tools/ui-checks/run-all.mjs --xvfb",
+    "test:e2e:headless": "electron-vite build && node tools/ui-checks/run-all.mjs --xvfb",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . && prettier --check --ignore-unknown .prettierrc \"*.{json,ts,js,yml,md}\" \"{src,tests,docs,tools,.github}/**\"",
     "format": "prettier --write --ignore-unknown .prettierrc \"*.{json,ts,js,yml,md}\" \"{src,tests,docs,tools,.github}/**\"",
