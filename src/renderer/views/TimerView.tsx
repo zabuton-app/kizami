@@ -8,6 +8,7 @@ import {
   type TimerSnapshot
 } from '../../shared/types'
 import { ThemePicker } from '../components/ThemePicker'
+import { SHORTCUT_KEYS, withShortcutHint } from '../shortcuts'
 
 const PALETTE_SIZE = 3
 
@@ -74,10 +75,22 @@ export function TimerView({
         </div>
       </div>
       <div className="timer__buttons">
-        <button type="button" className="btn btn--primary" onClick={onToggle}>
+        <button
+          type="button"
+          className="btn btn--primary"
+          aria-keyshortcuts={SHORTCUT_KEYS.toggle}
+          title={withShortcutHint(toggleLabel, SHORTCUT_KEYS.toggle)}
+          onClick={onToggle}
+        >
           {toggleLabel}
         </button>
-        <button type="button" className="btn btn--secondary" onClick={onSkip}>
+        <button
+          type="button"
+          className="btn btn--secondary"
+          aria-keyshortcuts={SHORTCUT_KEYS.skip}
+          title={withShortcutHint(t(language, 'timer.skip'), SHORTCUT_KEYS.skip)}
+          onClick={onSkip}
+        >
           {t(language, 'timer.skip')}
         </button>
       </div>

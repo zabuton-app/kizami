@@ -6,6 +6,7 @@ import {
   type TimeDisplayMode,
   type TimerSnapshot
 } from '../../shared/types'
+import { SHORTCUT_KEYS, withShortcutHint } from '../shortcuts'
 
 const PALETTE_SIZE = 3
 
@@ -74,7 +75,8 @@ export function MiniTimerView({
         type="button"
         className="mini-bar__toggle"
         aria-label={toggleLabel}
-        title={toggleLabel}
+        aria-keyshortcuts={SHORTCUT_KEYS.toggle}
+        title={withShortcutHint(toggleLabel, SHORTCUT_KEYS.toggle)}
         onClick={onToggle}
       >
         {snapshot.running ? (
@@ -92,7 +94,8 @@ export function MiniTimerView({
         type="button"
         className="mini-bar__icon-btn"
         aria-label={skipLabel}
-        title={skipLabel}
+        aria-keyshortcuts={SHORTCUT_KEYS.skip}
+        title={withShortcutHint(skipLabel, SHORTCUT_KEYS.skip)}
         onClick={onSkip}
       >
         <svg width="10" height="8" viewBox="0 0 10 8" aria-hidden="true">

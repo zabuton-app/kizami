@@ -42,7 +42,7 @@ if (!hasLock) {
     installAppProtocol()
     const popup = createPopupWindow()
     // Restore the persisted mini mode before the window is first shown.
-    applyMiniMode(settingsStore.get().miniMode)
+    applyMiniMode(settingsStore.get().miniMode, settingsStore.get().clockMode)
 
     const tray = new AppTray(
       {

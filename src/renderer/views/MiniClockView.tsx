@@ -8,12 +8,17 @@ import {
   msIntoDay,
   WEEKDAY_KEYS
 } from '../../shared/clock'
-import { formatClockTimerTime, type ClockTimerSnapshot } from '../../shared/clock-timer'
+import {
+  clockTimerStatusOf,
+  type ClockTimerPresetId,
+  type ClockTimerSnapshot
+} from '../../shared/clock-timer'
 import { t } from '../../shared/i18n'
 import { filledBlocks } from '../../shared/timer-logic'
 import { TIMEZONE_OPTIONS, type SecondaryTimeZone } from '../../shared/timezones'
 import { type ClockFormat, type Language } from '../../shared/types'
 import type { ClockShiftProps } from '../App'
+import { ClockTimerControls, ClockTimerPresets } from '../components/ClockTimerControls'
 
 const PALETTE_SIZE = 3
 
@@ -23,15 +28,23 @@ interface MiniClockViewProps {
   secondaryTimeZone: SecondaryTimeZone
   clockTimer: ClockTimerSnapshot | null
   shift: ClockShiftProps
+  onStartClockTimer: (preset: ClockTimerPresetId) => void
+  onToggleClockTimer: () => void
+  onResetClockTimer: () => void
+  onCancelClockTimer: () => void
+  onDismissClockTimer: () => void
   onExitMini: () => void
 }
 
 /**
- * Clock mode's mini bar: the clock rows, the day-progress blocks, the date and
- * the expand button — no timer controls. Escape-to-expand and dragging are
- * handled by App/.app--mini, same as the timer bar.
+ * Clock mode's mini bar: the clock rows, the day-progress blocks, the
+ * countdown timer's presets or controls, the date and the expand button.
+ * Escape-to-expand and dragging are handled by App/.app--mini, same as the
+ * timer bar.
  *
- * The bar is 380x58 at zoom 1, so a second zone has no room beside the first.
+ * The bar is WINDOW_MINI_CLOCK_SIZE (wider than the timer bar, to fit the
+ * countdown controls) and only 58px tall, so a second zone has no room beside
+ * the first.
  * Each row is drawn as a stacked cell instead — a small label line above the
  * time — which costs width only up to the wider of a zone's own label and its
  * own time, and gives the shift amount somewhere to live without adding an
@@ -43,6 +56,11 @@ export function MiniClockView({
   secondaryTimeZone,
   clockTimer,
   shift,
+  onStartClockTimer,
+  onToggleClockTimer,
+  onResetClockTimer,
+  onCancelClockTimer,
+  onDismissClockTimer,
   onExitMini
 }: MiniClockViewProps): React.JSX.Element {
   // The *real* current time, and the only instant this view holds. The date
@@ -182,32 +200,23 @@ export function MiniClockView({
           />
         ))}
       </div>
-      {/* The running clock-mode timer, mirrored read-only: the bar follows the
-          established convention of reflecting state without offering controls
-          (starting and cancelling live in the normal window). role="img" so
-          the label is legal and exposed on a span; not a live region — it
-          changes every second. Rendered only while running, so the idle bar
-          is unchanged. */}
-      {clockTimer !== null && clockTimer.status === 'running' && (
-        <span
-          className="mini-bar__ctimer"
-          role="img"
-          aria-label={`${t(language, 'clockTimer.remainingLabel')} ${formatClockTimerTime(
-            clockTimer.remainingSec
-          )}`}
-        >
-          {formatClockTimerTime(clockTimer.remainingSec)}
-        </span>
+      {/* The clock-mode timer, operable from the bar as well: the presets
+          while none exists, then in their place the readout and its
+          controls. Swapping rather than showing both keeps the bar to one
+          line; the controls stay mounted so their completion live region
+          exists before the change it announces. */}
+      {clockTimerStatusOf(clockTimer) === 'idle' && (
+        <ClockTimerPresets variant="mini" language={language} onStart={onStartClockTimer} />
       )}
-      {/* Always in the document: a live region only announces changes to a
-          region that already existed. Empty (any state but completed) the
-          stylesheet takes it out of flow, so the idle bar's layout is
-          untouched. */}
-      <span className="mini-bar__ctimer mini-bar__ctimer--done" role="status">
-        {clockTimer !== null && clockTimer.status === 'completed'
-          ? t(language, 'clockTimer.done')
-          : ''}
-      </span>
+      <ClockTimerControls
+        variant="mini"
+        clockTimer={clockTimer}
+        language={language}
+        onToggle={onToggleClockTimer}
+        onReset={onResetClockTimer}
+        onCancel={onCancelClockTimer}
+        onDismiss={onDismissClockTimer}
+      />
       <span className="mini-bar__date">
         {formatClockDate(
           realNow.getMonth() + 1,

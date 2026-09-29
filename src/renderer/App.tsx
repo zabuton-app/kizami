@@ -16,6 +16,7 @@ import {
   type UpdateStatus
 } from '../shared/types'
 import { accumulateWheelSteps } from '../shared/wheel-steps'
+import { shortcutFor } from './shortcuts'
 import { TitleBar } from './components/TitleBar'
 import { ClockView } from './views/ClockView'
 import { MiniClockView } from './views/MiniClockView'
@@ -30,8 +31,9 @@ type View = 'timer' | 'settings'
  * either mini mode is on, or it was just left and the compositor has not
  * applied the grow yet (Wayland resizes asynchronously). Either way the
  * window is WINDOW_MINI_SIZE.height (58) CSS px, since the mini window
- * tracks the zoom. A normal-mode window bottoms out around 173 CSS px in the
- * worst case (shrunk to the zoom-0.6 floor, then zoomed to 1.5 — zooming
+ * tracks the zoom. A normal-mode window bottoms out around 196 CSS px in the
+ * worst case (WINDOW_MIN_CONTENT_HEIGHT × ZOOM_MIN ÷ ZOOM_MAX: shrunk to the
+ * zoom-0.6 floor, then zoomed to 1.5 — zooming
  * rescales the CSS px but never grows the window). Keeping the threshold
  * well under that worst case is what guarantees zooming the normal view in
  * can never flip it into the mini bar; the mode itself is only ever entered
@@ -158,6 +160,11 @@ export function App(): React.JSX.Element | null {
 
   const startClockTimer = (preset: ClockTimerPresetId): void =>
     void window.kizami.startClockTimer(preset).then(setClockTimer)
+  // Shared by the buttons and the keyboard shortcuts, so both stay one action.
+  const togglePomodoro = (): void => void window.kizami.toggle().then(setSnapshot)
+  const skipPomodoro = (): void => void window.kizami.skip().then(setSnapshot)
+  const toggleClockTimer = (): void => void window.kizami.toggleClockTimer().then(setClockTimer)
+  const resetClockTimer = (): void => void window.kizami.resetClockTimer().then(setClockTimer)
   const cancelClockTimer = (): void => void window.kizami.cancelClockTimer().then(setClockTimer)
   const dismissClockTimer = (): void => void window.kizami.dismissClockTimer().then(setClockTimer)
 
@@ -213,7 +220,7 @@ export function App(): React.JSX.Element | null {
   // The main process resizes the window and tells the renderer in the same
   // turn, but the compositor applies the resize asynchronously (Wayland). If
   // the normal view rendered right away it would lay out inside the mini
-  // window's 380x58 and spill out of it. So keep showing the bar until the
+  // window's 58px height and spill out of it. So keep showing the bar until the
   // window has actually grown back.
   //
   // The threshold sits above the tallest mini window (WINDOW_MINI_SIZE.height
@@ -252,6 +259,66 @@ export function App(): React.JSX.Element | null {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [showMiniBar])
 
+  // Timer shortcuts (see shortcuts.ts): Space / S for the pomodoro timer,
+  // Space / R for clock mode's countdown. Bound on the timer and clock views
+  // and in the mini bar, never in settings, where the keys are typing.
+  const shortcutsActive = showMiniBar || view === 'timer'
+  useEffect(() => {
+    if (!shortcutsActive) return
+    // Whether the focused element was reached from the keyboard, sampled as
+    // focus arrives: Chromium turns :focus-visible on for whatever is focused
+    // as soon as any key goes down, so reading it inside keydown cannot tell
+    // a tabbed-to button from a clicked one. Seeded from whatever already has
+    // focus when the binding (re)starts, e.g. after switching modes.
+    let keyboardFocused = document.activeElement?.matches(':focus-visible') ?? false
+    const onFocusIn = (event: FocusEvent): void => {
+      keyboardFocused = event.target instanceof Element && event.target.matches(':focus-visible')
+    }
+    // Clicking the element that already has focus fires no focusin, so a
+    // tabbed-to button that is then clicked would otherwise keep Space.
+    const onPointerDown = (): void => {
+      keyboardFocused = false
+    }
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) return
+      const action = shortcutFor(event, clockMode)
+      if (action === null) return
+      const target = event.target
+      if (target instanceof HTMLElement) {
+        if (target.isContentEditable || target.closest('input, textarea, select') !== null) {
+          return
+        }
+        // Space is how the keyboard presses a focused button, so a button the
+        // user tabbed to keeps it. A button that only holds focus because it
+        // was clicked gives it up: otherwise Space right after clicking a
+        // preset would restart that preset instead of pausing it.
+        if (action === 'toggle' && keyboardFocused && target.closest('button') !== null) {
+          return
+        }
+      }
+      // Also keeps Space from pressing a mouse-focused button or scrolling.
+      // Auto-repeats of a held key are swallowed too but do nothing: left
+      // alone, the button's own Space handling would press it on key up.
+      event.preventDefault()
+      if (event.repeat) return
+      if (clockMode) {
+        if (action === 'toggle') toggleClockTimer()
+        if (action === 'reset') resetClockTimer()
+      } else {
+        if (action === 'toggle') togglePomodoro()
+        if (action === 'skip') skipPomodoro()
+      }
+    }
+    window.addEventListener('focusin', onFocusIn)
+    window.addEventListener('pointerdown', onPointerDown, true)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('focusin', onFocusIn)
+      window.removeEventListener('pointerdown', onPointerDown, true)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [shortcutsActive, clockMode])
+
   // Mini mode is a single bar with no title bar: the bar itself is the drag
   // handle, Escape leaves the bar for the normal window, and the tray icon is
   // what puts the window away.
@@ -264,6 +331,11 @@ export function App(): React.JSX.Element | null {
             language={language}
             secondaryTimeZone={secondaryTimeZone}
             clockTimer={clockTimer}
+            onStartClockTimer={startClockTimer}
+            onToggleClockTimer={toggleClockTimer}
+            onResetClockTimer={resetClockTimer}
+            onCancelClockTimer={cancelClockTimer}
+            onDismissClockTimer={dismissClockTimer}
             shift={{
               shiftHours: shift.hours,
               onWheelShift: (deltaY, deltaMode) =>
@@ -280,8 +352,8 @@ export function App(): React.JSX.Element | null {
               snapshot={snapshot}
               language={language}
               timeDisplay={timeDisplay}
-              onToggle={() => void window.kizami.toggle().then(setSnapshot)}
-              onSkip={() => void window.kizami.skip().then(setSnapshot)}
+              onToggle={togglePomodoro}
+              onSkip={skipPomodoro}
               onExitMini={() =>
                 void window.kizami.updateSettings({ miniMode: false }).then(setSettings)
               }
@@ -325,6 +397,8 @@ export function App(): React.JSX.Element | null {
                 secondaryTimeZone={secondaryTimeZone}
                 clockTimer={clockTimer}
                 onStartClockTimer={startClockTimer}
+                onToggleClockTimer={toggleClockTimer}
+                onResetClockTimer={resetClockTimer}
                 onCancelClockTimer={cancelClockTimer}
                 onDismissClockTimer={dismissClockTimer}
                 shift={{
@@ -345,8 +419,8 @@ export function App(): React.JSX.Element | null {
                 theme={theme}
                 timeDisplay={timeDisplay}
                 sessionsPerCycle={sessionsPerCycle}
-                onToggle={() => void window.kizami.toggle().then(setSnapshot)}
-                onSkip={() => void window.kizami.skip().then(setSnapshot)}
+                onToggle={togglePomodoro}
+                onSkip={skipPomodoro}
                 onSelectTheme={(next) =>
                   void window.kizami.updateSettings({ theme: next }).then(setSettings)
                 }

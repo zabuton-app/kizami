@@ -74,11 +74,13 @@ export const DEFAULT_SETTINGS: Settings = {
 export const WINDOW_SIZE = { width: 400, height: 560 } as const
 
 /**
- * Height of the timer layout at design width once the flexible slack between
- * the buttons and the theme picker is fully collapsed. Shrinking the window
- * height only removes that slack, so this is the height floor.
+ * Height of the tallest layout at design width once the flexible slack between
+ * the controls and the theme picker is fully collapsed: clock mode with a
+ * comparison zone and a countdown showing its second row of controls.
+ * Shrinking the window height only removes that slack, so this is the height
+ * floor. (The timer view alone needs 432.)
  */
-export const WINDOW_MIN_CONTENT_HEIGHT = 432
+export const WINDOW_MIN_CONTENT_HEIGHT = 490
 
 /** Smallest allowed popup width, as a fraction of the design width. */
 export const WINDOW_MIN_SCALE = 0.7
@@ -89,6 +91,12 @@ export const WINDOW_MIN_SCALE = 0.7
  * row of controls (the toggle button plus the bar's padding and border).
  */
 export const WINDOW_MINI_SIZE = { width: 380, height: 58 } as const
+
+/**
+ * Mini size in clock mode: the same single-row height, widened so the
+ * countdown timer's presets or controls fit beside the clock and the date.
+ */
+export const WINDOW_MINI_CLOCK_SIZE = { width: 520, height: WINDOW_MINI_SIZE.height } as const
 
 export const PROGRESS_BLOCKS = 10
 
@@ -189,6 +197,8 @@ export const IPC = {
   aboutOpenUrl: 'about:openUrl',
   clockTimerGetSnapshot: 'clockTimer:getSnapshot',
   clockTimerStart: 'clockTimer:start',
+  clockTimerToggle: 'clockTimer:toggle',
+  clockTimerReset: 'clockTimer:reset',
   clockTimerCancel: 'clockTimer:cancel',
   clockTimerDismiss: 'clockTimer:dismiss',
   clockTimerSnapshot: 'clockTimer:snapshot'
@@ -217,6 +227,10 @@ export interface KizamiApi {
   getClockTimer(): Promise<ClockTimerSnapshot>
   /** An id outside the preset list is ignored and the current snapshot returned. */
   startClockTimer(preset: ClockTimerPresetId): Promise<ClockTimerSnapshot>
+  /** Pauses a running timer or resumes a paused one; other states are left as-is. */
+  toggleClockTimer(): Promise<ClockTimerSnapshot>
+  /** Winds the current timer back to its full duration, paused; an idle timer is left as-is. */
+  resetClockTimer(): Promise<ClockTimerSnapshot>
   cancelClockTimer(): Promise<ClockTimerSnapshot>
   dismissClockTimer(): Promise<ClockTimerSnapshot>
   onClockTimerSnapshot(callback: (snapshot: ClockTimerSnapshot) => void): () => void
