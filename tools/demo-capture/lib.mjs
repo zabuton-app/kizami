@@ -20,6 +20,40 @@ const SETTLE_MS = 900
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
+ * Set when running under `xvfb-run` (`tools/ui-checks/run-all.mjs --xvfb` sets
+ * it for you). `xvfb-run` only sets DISPLAY, so from a Wayland session Electron
+ * would still pick the real compositor through WAYLAND_DISPLAY /
+ * ELECTRON_OZONE_PLATFORM_HINT (or fail to start when those are half cleared).
+ * Under this flag the app is pinned to the X server.
+ *
+ * Every spawn of the app must use both electronEnv() and
+ * electronPlatformArgs(); either one alone still reaches for Wayland.
+ */
+const forceX11 = process.env.KIZAMI_FORCE_X11 === '1'
+
+/** Environment for a spawned app instance. */
+export function electronEnv() {
+  // Inherited ELECTRON_RUN_AS_NODE would start the binary as plain Node, which
+  // cannot resolve the built-in `electron` module the built main script imports.
+  const env = { ...process.env }
+  delete env.ELECTRON_RUN_AS_NODE
+  if (forceX11) {
+    delete env.WAYLAND_DISPLAY
+    delete env.ELECTRON_OZONE_PLATFORM_HINT
+    env.XDG_SESSION_TYPE = 'x11'
+  }
+  return env
+}
+
+/** What to print when a launch fails, most often for want of an X display. */
+export const NO_DISPLAY_HINT =
+  "If this session has no X display, prefix the command with `KIZAMI_FORCE_X11=1 xvfb-run -a -s '-screen 0 1920x1080x24'`, " +
+  'or run the UI checks with `node tools/ui-checks/run-all.mjs --xvfb [check ...]`.'
+
+/** Command-line switches every app instance needs, after the main script. */
+export const electronPlatformArgs = () => (forceX11 ? ['--ozone-platform=x11'] : [])
+
+/**
  * Launch the built app against a throwaway user-data dir, so a capture run can
  * click UI that persists settings without disturbing the real configuration.
  *
@@ -32,16 +66,16 @@ export async function launchApp({ elapsedMs = 0 } = {}) {
   }
 
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kizami-capture-'))
-  // Inherited ELECTRON_RUN_AS_NODE would start the binary as plain Node, which
-  // cannot resolve the built-in `electron` module the built main script imports.
-  const env = { ...process.env }
-  delete env.ELECTRON_RUN_AS_NODE
-
   const app = await _electron.launch({
     executablePath: electronExecutable,
     // A fixed scale factor keeps the captures reproducible across machines.
-    args: [mainScript, `--user-data-dir=${userDataDir}`, '--force-device-scale-factor=1'],
-    env
+    args: [
+      mainScript,
+      `--user-data-dir=${userDataDir}`,
+      '--force-device-scale-factor=1',
+      ...electronPlatformArgs()
+    ],
+    env: electronEnv()
   })
 
   const page = await app.firstWindow()

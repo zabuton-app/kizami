@@ -17,7 +17,14 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { launchApp, repoRoot, sleep } from '../demo-capture/lib.mjs'
+import {
+  electronEnv,
+  electronPlatformArgs,
+  launchApp,
+  NO_DISPLAY_HINT,
+  repoRoot,
+  sleep
+} from '../demo-capture/lib.mjs'
 
 const require = createRequire(path.join(repoRoot, 'package.json'))
 const { _electron } = require('playwright-core')
@@ -750,14 +757,6 @@ async function setClockMode(page, on) {
 
 // --- instances ---------------------------------------------------------------
 
-const childEnv = () => {
-  // Inherited ELECTRON_RUN_AS_NODE would start the binary as plain Node, which
-  // cannot resolve the built-in `electron` module the built main script imports.
-  const env = { ...process.env }
-  delete env.ELECTRON_RUN_AS_NODE
-  return env
-}
-
 const profileNames = () =>
   new Set(fs.readdirSync(os.tmpdir()).filter((name) => name.startsWith(PROFILE_PREFIX)))
 
@@ -810,8 +809,13 @@ async function launchDirect({ profile = null, elapsedMs = 0 } = {}) {
   const dir = profile ?? fs.mkdtempSync(path.join(os.tmpdir(), PROFILE_PREFIX))
   const app = await _electron.launch({
     executablePath: electronExecutable,
-    args: [mainScript, `--user-data-dir=${dir}`, '--force-device-scale-factor=1'],
-    env: childEnv()
+    args: [
+      mainScript,
+      `--user-data-dir=${dir}`,
+      '--force-device-scale-factor=1',
+      ...electronPlatformArgs()
+    ],
+    env: electronEnv()
   })
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
@@ -874,8 +878,9 @@ const readNotifications = (instance) =>
  * the lock instead, and the window was never asked to come back.
  */
 function showWindowAgain(profile) {
-  const child = spawn(electronExecutable, [mainScript, `--user-data-dir=${profile}`], {
-    env: childEnv(),
+  const args = [mainScript, `--user-data-dir=${profile}`, ...electronPlatformArgs()]
+  const child = spawn(electronExecutable, args, {
+    env: electronEnv(),
     stdio: 'ignore'
   })
   return new Promise((resolve, reject) => {
@@ -2084,7 +2089,7 @@ async function main() {
       if (!(await runSelfCheck(only, verbose))) process.exitCode = 1
     } catch (error) {
       console.error(error.message)
-      console.error('If this session has no X display, prefix the command with `xvfb-run -a`.')
+      console.error(NO_DISPLAY_HINT)
       process.exitCode = 1
     }
     return
@@ -2095,7 +2100,7 @@ async function main() {
     instance = await launchTracked()
   } catch (error) {
     console.error(error.message)
-    console.error('If this session has no X display, prefix the command with `xvfb-run -a`.')
+    console.error(NO_DISPLAY_HINT)
     process.exitCode = 1
     return
   }

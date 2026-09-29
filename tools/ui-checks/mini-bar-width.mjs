@@ -7,7 +7,7 @@
 // See tools/ui-checks/README.md for usage.
 import fs from 'node:fs'
 import path from 'node:path'
-import { launchApp, repoRoot, sleep } from '../demo-capture/lib.mjs'
+import { NO_DISPLAY_HINT, launchApp, repoRoot, sleep } from '../demo-capture/lib.mjs'
 
 /** The four combinations requirement 2.6 is about. */
 const LANGUAGES = ['ja', 'en']
@@ -195,15 +195,20 @@ function measure(page) {
         date: boxOf('.mini-bar__date'),
         expand: boxOf('.mini-bar__icon-btn')
       },
-      children: [...bar.children].map((element) => {
-        const box = element.getBoundingClientRect()
-        return {
-          name: element.className.split(' ')[0].replace('mini-bar__', ''),
-          width: box.width,
-          start: box.left - contentLeft,
-          end: box.right - contentLeft
-        }
-      }),
+      // A `display: contents` child (the idle countdown controls) generates no
+      // box of its own: its rect is all zeros, which would read as sticking
+      // out to the left, and it takes no gap in the bar's flex row.
+      children: [...bar.children]
+        .filter((element) => styleOf(element).display !== 'contents')
+        .map((element) => {
+          const box = element.getBoundingClientRect()
+          return {
+            name: element.className.split(' ')[0].replace('mini-bar__', ''),
+            width: box.width,
+            start: box.left - contentLeft,
+            end: box.right - contentLeft
+          }
+        }),
       blocks: {
         count: blockElements.length,
         width: blockElements[0].getBoundingClientRect().width,
@@ -375,7 +380,7 @@ async function main() {
     app = await launchApp()
   } catch (error) {
     console.error(error.message)
-    console.error('If this session has no X display, prefix the command with `xvfb-run -a`.')
+    console.error(NO_DISPLAY_HINT)
     process.exitCode = 1
     return
   }
