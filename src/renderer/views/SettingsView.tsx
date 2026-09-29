@@ -140,6 +140,7 @@ function UpdateSection({ language }: { language: Language }): React.JSX.Element 
           className={`switch ${status?.autoCheck ? 'switch--on' : ''}`}
           role="switch"
           aria-checked={status?.autoCheck ?? false}
+          aria-label={t(language, 'settings.updateAuto')}
           onClick={() => {
             void window.kizami.setUpdateAutoCheck(!status?.autoCheck).then(setStatus)
           }}
@@ -321,6 +322,7 @@ export function SettingsView({
             className={`switch ${settings.autoStart ? 'switch--on' : ''}`}
             role="switch"
             aria-checked={settings.autoStart}
+            aria-label={t(language, 'settings.autoStart')}
             onClick={() => onUpdate({ autoStart: !settings.autoStart })}
           >
             <span className="switch__knob" />
@@ -448,6 +450,7 @@ export function SettingsView({
             className={`switch ${settings.trayTime ? 'switch--on' : ''}`}
             role="switch"
             aria-checked={settings.trayTime}
+            aria-label={t(language, 'settings.trayTime')}
             onClick={() => onUpdate({ trayTime: !settings.trayTime })}
           >
             <span className="switch__knob" />
