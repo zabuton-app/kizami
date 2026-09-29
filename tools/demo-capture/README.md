@@ -8,7 +8,10 @@ the popup through the main process so the transparent rounded corners survive.
 ## Prerequisites
 
 - `npm install` and `npm run build` (the scripts launch `out/main/index.js`)
-- Linux: an X display. Under a headless session, prefix with `xvfb-run -a`
+- Linux: an X display. Under a headless session, prefix with
+  `KIZAMI_FORCE_X11=1 xvfb-run -a -s '-screen 0 1920x1080x24'` (see
+  [ui-checks](../ui-checks/README.md#running-the-whole-suite) for why the
+  variable is needed)
 
 Only `playwright-core` is needed — no browser download, no extra install step.
 

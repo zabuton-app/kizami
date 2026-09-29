@@ -10,9 +10,40 @@ DOM, and these questions can only be answered by real layout.
 ## Prerequisites
 
 - `npm install` and `npm run build` (the checks launch `out/main/index.js`)
-- Linux: an X display. Under a headless session, prefix with `xvfb-run -a`
+- Linux: an X display, or `xvfb-run` for the headless runs below
+  (Debian/Ubuntu: `xvfb`, Arch: `xorg-server-xvfb`)
 
 Only `playwright-core` is needed — no browser download, no extra install step.
+
+## Running the whole suite
+
+```bash
+# Build, then run every check on the current display
+npm run test:e2e
+
+# Build, then run every check on a virtual X server (no window on screen)
+npm run test:e2e:xvfb
+
+# Without rebuilding: pick checks by name, pass --verbose through
+node tools/ui-checks/run-all.mjs --xvfb clock-shift --verbose
+```
+
+`run-all.mjs` runs the checks one after another, each in its own Node process,
+prints a PASS/FAIL summary and exits non-zero if any check failed. A new check
+has to be added to its `CHECKS` list to be part of the suite. With
+`--xvfb` each check gets its own `xvfb-run -a` server at 1920x1080x24 (the
+`xvfb-run` default of 640x480x8 is too small and too shallow for the popup).
+
+It also sets `KIZAMI_FORCE_X11=1`, which makes the shared harness drop
+`WAYLAND_DISPLAY` and `ELECTRON_OZONE_PLATFORM_HINT` and pass
+`--ozone-platform=x11`. Without that, a plain `xvfb-run -a node ...` from a
+Wayland session either opens the window on the real compositor or fails to
+start with `Failed to connect to Wayland display`. Set the variable yourself
+when running a single check under `xvfb-run` by hand:
+
+```bash
+KIZAMI_FORCE_X11=1 xvfb-run -a -s '-screen 0 1920x1080x24' node tools/ui-checks/mini-bar-width.mjs
+```
 
 ## mini-bar-width
 
