@@ -100,6 +100,7 @@ export function sanitizeSettings(input: unknown, base: Settings = DEFAULT_SETTIN
     theme: asThemeId(raw.theme, base.theme),
     miniMode: asBoolean(raw.miniMode, base.miniMode),
     trayIcon: asTrayIconId(raw.trayIcon, base.trayIcon),
+    trayTime: asBoolean(raw.trayTime, base.trayTime),
     timeDisplay: asTimeDisplayMode(raw.timeDisplay, base.timeDisplay),
     clockMode: asBoolean(raw.clockMode, base.clockMode),
     clockFormat: asClockFormat(raw.clockFormat, base.clockFormat),

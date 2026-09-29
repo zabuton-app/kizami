@@ -18,6 +18,7 @@ const current: Settings = {
   theme: 'grapeGummy',
   miniMode: false,
   trayIcon: 'tomato',
+  trayTime: false,
   timeDisplay: 'elapsed',
   clockMode: true,
   clockFormat: 'hhmmss',
@@ -103,6 +104,16 @@ describe('sanitizeSettings', () => {
 
   it('defaults trayIcon to kizami when the field is missing (pre-icon settings file)', () => {
     expect(sanitizeSettings({ workMinutes: 30 }).trayIcon).toBe('kizami')
+  })
+
+  it('shows the tray time when the field is missing (pre-feature settings file)', () => {
+    expect(sanitizeSettings({ workMinutes: 30 }).trayTime).toBe(true)
+  })
+
+  it('accepts a boolean trayTime and falls back on other values', () => {
+    expect(sanitizeSettings({ trayTime: false }).trayTime).toBe(false)
+    expect(sanitizeSettings({ trayTime: 'no' }, current).trayTime).toBe(false)
+    expect(sanitizeSettings({ trayTime: 0 }).trayTime).toBe(true)
   })
 
   it('accepts every valid time display mode', () => {

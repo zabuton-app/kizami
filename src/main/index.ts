@@ -56,8 +56,7 @@ if (!hasLock) {
       settingsStore.get().trayIcon
     )
 
-    const refreshTray = (): void =>
-      tray.update(engine.isRunning(), engine.currentPhase(), settingsStore.get())
+    const refreshTray = (): void => tray.update(engine.snapshot(), settingsStore.get())
 
     // Stop the 1s tick before Electron starts destroying the popup and tray.
     // `unref()` only lets the process exit; it does not cancel the interval.

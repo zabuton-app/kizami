@@ -7,7 +7,7 @@ import type { SettingsStore } from '../../src/main/settings-store'
 import { TimerEngine } from '../../src/main/timer-engine'
 import { AppTray } from '../../src/main/tray'
 import type { Updater } from '../../src/main/updater'
-import { DEFAULT_SETTINGS, IPC } from '../../src/shared/types'
+import { DEFAULT_SETTINGS, IPC, type TimerSnapshot } from '../../src/shared/types'
 
 /**
  * Shutdown ordering is not under the app's control: Electron may destroy the
@@ -21,6 +21,7 @@ const tray = vi.hoisted(() => ({
   destroyed: false,
   setImage: vi.fn(),
   setToolTip: vi.fn(),
+  setTitle: vi.fn(),
   setContextMenu: vi.fn(),
   on: vi.fn()
 }))
@@ -49,10 +50,18 @@ vi.mock('electron', () => ({
     isDestroyed = (): boolean => tray.destroyed
     setImage = tray.setImage
     setToolTip = tray.setToolTip
+    setTitle = tray.setTitle
     setContextMenu = tray.setContextMenu
     on = tray.on
   },
-  nativeImage: { createFromPath: vi.fn(() => ({ setTemplateImage: vi.fn() })) }
+  nativeImage: {
+    createFromPath: vi.fn(() => ({
+      setTemplateImage: vi.fn(),
+      getSize: () => ({ width: 22, height: 22 }),
+      resize: () => ({ toBitmap: () => Buffer.alloc(16 * 16 * 4) })
+    })),
+    createFromBitmap: vi.fn(() => ({}))
+  }
 }))
 
 /**
@@ -92,6 +101,18 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+const RUNNING: TimerSnapshot = {
+  phase: 'work',
+  session: 1,
+  running: true,
+  fresh: false,
+  remainingSec: 600,
+  totalSec: 1500,
+  filledBlocks: 6,
+  taskName: '',
+  language: 'en'
+}
+
 describe('timer updates during shutdown', () => {
   it('does not touch the popup once it has been destroyed', () => {
     vi.useFakeTimers()
@@ -119,7 +140,7 @@ describe('timer updates during shutdown', () => {
     const appTray = new AppTray({ onToggle: vi.fn(), onOpen: vi.fn(), onQuit: vi.fn() })
     tray.destroyed = true
 
-    expect(() => appTray.update(true, 'work', DEFAULT_SETTINGS)).not.toThrow()
+    expect(() => appTray.update(RUNNING, DEFAULT_SETTINGS)).not.toThrow()
     expect(tray.setToolTip).not.toHaveBeenCalled()
     expect(tray.setContextMenu).not.toHaveBeenCalled()
   })
@@ -127,8 +148,21 @@ describe('timer updates during shutdown', () => {
   it('still refreshes a live tray', () => {
     const appTray = new AppTray({ onToggle: vi.fn(), onOpen: vi.fn(), onQuit: vi.fn() })
 
-    appTray.update(true, 'work', DEFAULT_SETTINGS)
+    appTray.update(RUNNING, DEFAULT_SETTINGS)
     expect(tray.setToolTip).toHaveBeenCalledTimes(1)
     expect(tray.setContextMenu).toHaveBeenCalledTimes(1)
+  })
+
+  it('redraws the tray image only when the ring moves a step', () => {
+    const appTray = new AppTray({ onToggle: vi.fn(), onOpen: vi.fn(), onQuit: vi.fn() })
+
+    appTray.update(RUNNING, DEFAULT_SETTINGS)
+    appTray.update({ ...RUNNING, remainingSec: RUNNING.remainingSec - 1 }, DEFAULT_SETTINGS)
+    // Off macOS the time is drawn into the icon; there it is a title instead.
+    const expectedImages = process.platform === 'darwin' ? 0 : 1
+    expect(tray.setImage).toHaveBeenCalledTimes(expectedImages)
+
+    appTray.update({ ...RUNNING, remainingSec: 0 }, DEFAULT_SETTINGS)
+    expect(tray.setImage).toHaveBeenCalledTimes(expectedImages * 2)
   })
 })
