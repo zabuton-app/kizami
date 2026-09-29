@@ -7,7 +7,7 @@
 // See tools/ui-checks/README.md for usage.
 import fs from 'node:fs'
 import path from 'node:path'
-import { launchApp, repoRoot, sleep } from '../demo-capture/lib.mjs'
+import { NO_DISPLAY_HINT, launchApp, repoRoot, sleep } from '../demo-capture/lib.mjs'
 
 /** The four combinations requirement 2.6 is about. */
 const LANGUAGES = ['ja', 'en']
@@ -380,7 +380,7 @@ async function main() {
     app = await launchApp()
   } catch (error) {
     console.error(error.message)
-    console.error('If this session has no X display, prefix the command with `xvfb-run -a`.')
+    console.error(NO_DISPLAY_HINT)
     process.exitCode = 1
     return
   }

@@ -45,6 +45,11 @@ export function electronEnv() {
   return env
 }
 
+/** What to print when a launch fails, most often for want of an X display. */
+export const NO_DISPLAY_HINT =
+  "If this session has no X display, prefix the command with `KIZAMI_FORCE_X11=1 xvfb-run -a -s '-screen 0 1920x1080x24'`, " +
+  'or run the UI checks with `node tools/ui-checks/run-all.mjs --xvfb [check ...]`.'
+
 /** Command-line switches every app instance needs, after the main script. */
 export const electronPlatformArgs = () => (forceX11 ? ['--ozone-platform=x11'] : [])
 

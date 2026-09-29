@@ -21,6 +21,7 @@ import {
   electronEnv,
   electronPlatformArgs,
   launchApp,
+  NO_DISPLAY_HINT,
   repoRoot,
   sleep
 } from '../demo-capture/lib.mjs'
@@ -2088,7 +2089,7 @@ async function main() {
       if (!(await runSelfCheck(only, verbose))) process.exitCode = 1
     } catch (error) {
       console.error(error.message)
-      console.error('If this session has no X display, prefix the command with `xvfb-run -a`.')
+      console.error(NO_DISPLAY_HINT)
       process.exitCode = 1
     }
     return
@@ -2099,7 +2100,7 @@ async function main() {
     instance = await launchTracked()
   } catch (error) {
     console.error(error.message)
-    console.error('If this session has no X display, prefix the command with `xvfb-run -a`.')
+    console.error(NO_DISPLAY_HINT)
     process.exitCode = 1
     return
   }
